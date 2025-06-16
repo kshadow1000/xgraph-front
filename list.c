@@ -32,7 +32,7 @@ int main(int c,char **argv){
 			printf("%zu keywords\n",p-expr_keywords);
 			break;
 		}
-		printf("%-12s\tKeyword %s%s\t%s\n",p->str,p->flag&EXPR_KF_SUBEXPR?"S":" ",p->flag&EXPR_KF_SEPCOMMA?"C":" ",p->desc);
+		printf("%-12s\tKeyword %s%s%s\t%s\n",p->str,p->flag&EXPR_KF_SUBEXPR?"S":" ",p->flag&EXPR_KF_SEPCOMMA?"C":" ",p->flag&EXPR_KF_NOPROTECT?"N":" ",p->desc);
 	}
 	printf("\n");
 	for(const struct expr_builtin_symbol *p=expr_symbols;;++p){
@@ -50,7 +50,9 @@ int main(int c,char **argv){
 				break;
 			case EXPR_FUNCTION:
 				if(p->flag&EXPR_SF_INJECTION)
-				printf("f(1.0):%.4g    f(e):%.4g",p->un.func(1),p->un.func(M_E));
+					printf("I");
+				if(p->flag&EXPR_SF_UNSAFE)
+					printf("U");
 				break;
 			case EXPR_MDFUNCTION:
 			case EXPR_MDEPFUNCTION:
@@ -58,8 +60,16 @@ int main(int c,char **argv){
 				printf("dimension: %hd",p->dim);
 				else
 				printf("dimension: no limit");
+				if(p->flag&EXPR_SF_INJECTION)
+					printf(" I");
+				if(p->flag&EXPR_SF_UNSAFE)
+					printf(" U");
 				break;
 			case EXPR_ZAFUNCTION:
+				if(p->flag&EXPR_SF_INJECTION)
+					printf("I");
+				if(p->flag&EXPR_SF_UNSAFE)
+					printf("U");
 				//printf("f():%.4g",p->un.zafunc());
 				break;
 			default:

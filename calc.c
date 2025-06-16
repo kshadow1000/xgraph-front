@@ -46,6 +46,16 @@ int main(int argc,char **argv){
 				count=atol(argv[++i]);
 		}else if(!strcmp(argv[i],"--no"))
 			flag|=EXPR_IF_NOOPTIMIZE;
+		else if(!strcmp(argv[i],"--nb"))
+			flag|=EXPR_IF_NOBUILTIN;
+		else if(!strcmp(argv[i],"--nk"))
+			flag|=EXPR_IF_NOKEYWORD;
+		else if(!strcmp(argv[i],"--i"))
+			flag|=EXPR_IF_INJECTION;
+		else if(!strcmp(argv[i],"--p"))
+			flag|=EXPR_IF_PROTECT;
+		else if(!strcmp(argv[i],"--is"))
+			flag|=EXPR_IF_INJECTION_S;
 	}
 	add_common_symbols(es);
 	if(!strcmp(e=argv[argc-1],"-")){

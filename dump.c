@@ -146,6 +146,7 @@ void list(const struct expr *restrict ep,const struct expr_symset *restrict esp)
 			case EXPR_MEP:sop="mep";goto md;
 			case EXPR_VMD:sop="vmd";goto vmd;
 			case EXPR_DO:sop="do";goto hot;
+			case EXPR_DO1:sop="do1";goto hot;
 			case EXPR_WIF:sop="wif";goto hot;
 			case EXPR_EP:sop="ep";goto hot;
 			case EXPR_HOT:
