@@ -319,6 +319,7 @@ const struct option ops[]={
 	{"no-optimize",0,NULL,'n'},
 	{"dump",0,NULL,'D'},
 	{"timeout",2,NULL,'t'},
+	{"count",1,NULL,0xff01},
 	{NULL},
 };
 void add_common_symbols(struct expr_symset *);
@@ -335,6 +336,8 @@ void show_help(const char *a0){
 			"\t--safe, -p\twork on protected mode\n"
 			"\t--no-optimize, -n\tdo nto optimize\n"
 			"\t--dump, -D\tdump mode(do not evaluate)\n"
+			"\t--timeout[=seconds,default 1], -t\tset the timeout for evaluation\n"
+			"\t--count count\tevaluate how many times,default 1\n"
 			,a0);
 	exit(EXIT_SUCCESS);
 }
@@ -364,8 +367,10 @@ int main(int argc,char **argv){
 	char *e;
 	int flag=0;
 	int dump=0;
+	size_t count=1;
 	double alarm_sec=0.0,r;
 	struct expr ep[1];
+	sighandler_t sigold;
 	if(argc<2)
 		errx(EXIT_FAILURE,"see --help");
 	opterr=1;
@@ -382,6 +387,9 @@ int main(int argc,char **argv){
 				break;
 			case 't':
 				alarm_sec=optarg?atod2(optarg):1.0;
+				break;
+			case 0xff01:
+				count=(size_t)atod2(optarg);
 				break;
 			case -1:
 				goto break2;
@@ -413,15 +421,19 @@ break2:
 		list(ep,es);
 	else {
 		if(alarm_sec!=0.0){
-			if(signal(SIGALRM,attimeout)==SIG_ERR)
+			sigold=signal(SIGALRM,attimeout);
+			if(sigold==SIG_ERR)
 				err(EXIT_FAILURE,"cannot set alarm handler");
 			if(sigsetjmp(sjb,1)==1)
 				errx(EXIT_FAILURE,"evaluation timed out");
 			if(d_alarm(alarm_sec)<0)
 				err(EXIT_FAILURE,"cannot set alarm");
 		}
+		do {
 		r=expr_eval(ep,0);
+		}while(--count);
 		d_alarm(0.0);
+		signal(SIGALRM,sigold);
 		printdouble(r);
 	}
 	expr_free(ep);

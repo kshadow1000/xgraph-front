@@ -63,7 +63,7 @@ result: 3.000000
 real    0m1.328s
 user    0m1.318s
 sys     0m0.006s
-~/zserge_expr $ time ../xgraph-front/calc -n 100000000 'sqrt(x0+4)+(0.75|1.5)'
+~/zserge_expr $ time ../xgraph-front/calc --count 100000000 'sqrt(x0+4)+(0.75|1.5)'
 //x0=0.
 //The expression will be optimized
 //into the constant 3.75 (the real
@@ -110,7 +110,7 @@ How to build
 
 Run
 ```
-git clone https://github.com/dcfbh/xgraph.git
+git clone https://github.com/rd-bt/xgraph.git
 ```
 or
 ```
