@@ -170,6 +170,20 @@ double d_sleep(double x){
 	return (double)rts.tv_sec+rts.tv_nsec/1000000000.0;
 }
 
+#include <sys/time.h>
+double d_alarm(double x){
+	struct itimerval rtv,tv;
+	double fx;
+	x=fabs(x);
+	fx=floor(x);
+	tv.it_value.tv_sec=(time_t)fx;
+	tv.it_value.tv_usec=(time_t)((x-fx)*1000000.0);
+	memset(&tv.it_interval,0,sizeof(struct timeval));
+	memset(&rtv,0,sizeof(struct itimerval));
+	if(setitimer(ITIMER_REAL,&tv,&rtv)<0)
+		return -1.0;
+	return (double)rtv.it_value.tv_sec+rtv.it_value.tv_usec/1000000000.0;
+}
 #define a2s(buf,args,size) buf=alloca(size+1);\
 	for(size_t i=0;i<size;++i)\
 		buf[i]=(char)*(args++)
@@ -318,9 +332,8 @@ double d_sorta_old(size_t n,double *args){
 	return (double)fprintda(STDOUT_FILENO,args,n);
 }
 double d_sorta(size_t n,double *args){
-	void *r=expr_sort3(args,n,malloc);
-	if(!r)return NAN;
-	free(r);
+	if(expr_sort4(args,n,malloc,free)<0)
+		return NAN;
 	return (double)fprintda(STDOUT_FILENO,args,n);
 }
 double d_frya(size_t n,double *args){
@@ -335,14 +348,15 @@ void add_common_symbols(struct expr_symset *es){
 	char buf[32];
 	for(size_t i=0;i<(sizeof(vx)/sizeof(*vx));++i){
 		sprintf(buf,"x%zu",i);
-		expr_symset_add(es,buf,EXPR_VARIABLE,vx+i);
+		expr_symset_add(es,buf,EXPR_VARIABLE,0,vx+i);
 	}
 	//puts("vx ok");
-	expr_symset_add(es,"errno",EXPR_VARIABLE,&errno);
-	expr_symset_add(es,"sig",EXPR_VARIABLE,&last_sig);
-	expr_symset_add(es,"sigep",EXPR_VARIABLE,&sigep);
-#define setza(c) expr_symset_add(es,#c,EXPR_ZAFUNCTION,d_##c)
-	expr_symset_add(es,"time",EXPR_ZAFUNCTION,dtime);
+	expr_symset_add(es,"errno",EXPR_VARIABLE,0,&errno);
+	expr_symset_add(es,"sig",EXPR_VARIABLE,0,&last_sig);
+	expr_symset_add(es,"sigep",EXPR_VARIABLE,0,&sigep);
+#define setza(c) expr_symset_add(es,#c,EXPR_ZAFUNCTION,0,d_##c)
+#define setzau(c) expr_symset_add(es,#c,EXPR_ZAFUNCTION,EXPR_SF_UNSAFE,d_##c)
+	expr_symset_add(es,"time",EXPR_ZAFUNCTION,0,dtime);
 	setza(getpid);
 	setza(getppid);
 	setza(gettid);
@@ -350,17 +364,18 @@ void add_common_symbols(struct expr_symset *es){
 	setza(geteuid);
 	setza(getgid);
 	setza(getegid);
-	setza(fork);
-	setza(vfork);
-#define setfunc0(c) expr_symset_add(es,#c,EXPR_FUNCTION,c)
-#define setfunc(c) expr_symset_add(es,#c,EXPR_FUNCTION,d_##c)
+	setzau(fork);
+	setzau(vfork);
+#define setfunc(c) expr_symset_add(es,#c,EXPR_FUNCTION,0,d_##c,EXPR_SF_UNSAFE)
+#define setfunci(c) expr_symset_add(es,#c,EXPR_FUNCTION,0,d_##c,EXPR_SF_INJECTION)
+	setfunc(alarm);
 	setfunc(close);
-	setfunc(htonl)->flag|=EXPR_SF_INJECTION;
-	setfunc(htons)->flag|=EXPR_SF_INJECTION;
-	setfunc(isprime)->flag|=EXPR_SF_INJECTION;
-	setfunc(prime)->flag|=EXPR_SF_INJECTION;
-	setfunc(prime_mt)->flag|=EXPR_SF_INJECTION;
-	setfunc(prime_old)->flag|=EXPR_SF_INJECTION;
+	setfunci(htonl);
+	setfunci(htons);
+	setfunci(isprime);
+	setfunci(prime);
+	setfunci(prime_mt);
+	setfunci(prime_old);
 	setfunc(print);
 	setfunc(sigep);
 	setfunc(puts);
@@ -374,7 +389,7 @@ void add_common_symbols(struct expr_symset *es){
 	setfunc(strerror);
 	setfunc(strlen);
 	setfunc(wait);
-#define setmd(c,dim) expr_symset_add(es,#c,EXPR_MDFUNCTION,d_##c,(size_t)dim)
+#define setmd(c,dim) expr_symset_add(es,#c,EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_##c,(size_t)dim)
 	setmd(accept,3);
 	setmd(bind,3);
 	setmd(connect,0);
@@ -397,7 +412,7 @@ void add_common_symbols(struct expr_symset *es){
 	setmd(tgkill,3);
 	setmd(write,3);
 	setmd(open,0);
-#define setconst(c) expr_symset_add(es,#c,EXPR_CONSTANT,(double)(c))
+#define setconst(c) expr_symset_add(es,#c,EXPR_CONSTANT,0,(double)(c))
 	setconst(AF_UNIX);
 	setconst(AF_INET);
 	setconst(AF_INET6);

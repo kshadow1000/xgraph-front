@@ -1,7 +1,7 @@
 #! /bin/bash
-for i in {2..100}
+for i in {1..100}
 do
-	gcc -Wall -Ofast -DEXPR_SYMNEXT=$i symtest.c common_symbols.c -o symtest xgraph/expr.c -lc -lm
+	gcc -Wall -DEXPR_SYMNEXT=$i symtest.c common_symbols.c -o symtest xgraph/expr.c -lc -lm
 	v=1
 	for j in {1..100}
 	do

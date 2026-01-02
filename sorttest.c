@@ -39,19 +39,18 @@ int main(int argc,char **argv){
 	srandom(time(NULL)+getpid());
 	for(size_t i=from;i<=to;++i,printf("\n")){
 		t3=0.0;
-		void *r;
+		int r;
 		for(size_t j=0;j<times;++j){
 			randomize(rv,i);
 			dt=dtime();
-			r=expr_sort3(rv,i,malloc);
+			r=expr_sort4(rv,i,malloc,free);
 			t3+=dtime()-dt;
-			if(!r){
+			if(r<0){
 				fputs("CANNOT ALLOCATE MEMORY\n",stderr);
 				abort();
 			}
-			free(r);
 		}
-		printf("n=%zu\t expr_sort3: %zums %p",i,(size_t)(t3*1000),r);
+		printf("n=%zu\t expr_sort4: %zums",i,(size_t)(t3*1000));
 		//continue;
 		t=0.0;
 		for(size_t j=0;j<times;++j){
