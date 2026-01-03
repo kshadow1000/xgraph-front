@@ -91,6 +91,18 @@ void list(const struct expr *restrict ep,const struct expr_symset *restrict esp)
 					sop="input";
 					strcpy(ssrc," ");
 					break;
+			case EXPR_IP:
+					sop="ip";
+					strcpy(ssrc," ");
+					break;
+			case EXPR_IPP:
+					sop="ipp";
+					strcpy(ssrc," ");
+					break;
+			case EXPR_TO:
+					sop="to";
+					strcpy(ssrc," ");
+					break;
 			case EXPR_BL:sop="bl";break;
 			case EXPR_PBL:sop="pbl";break;
 			case EXPR_READ:sop="read";break;
@@ -317,6 +329,7 @@ double d_alarm(double);
 const struct option ops[]={
 	{"safe",0,NULL,'p'},
 	{"no-optimize",0,NULL,'n'},
+	{"no-builtin",0,NULL,'N'},
 	{"dump",0,NULL,'D'},
 	{"timeout",2,NULL,'t'},
 	{"count",1,NULL,0xff01},
@@ -334,7 +347,8 @@ __attribute__((destructor)) void atend(void){
 void show_help(const char *a0){
 	fprintf(stdout,"usage: %s [options] expression/-\n"
 			"\t--safe, -p\twork on protected mode\n"
-			"\t--no-optimize, -n\tdo nto optimize\n"
+			"\t--no-optimize, -n\tdo not optimize\n"
+			"\t--no-builtin, -N\tdo not use builtin symbols\n"
 			"\t--dump, -D\tdump mode(do not evaluate)\n"
 			"\t--timeout[=seconds,default 1], -t\tset the timeout for evaluation\n"
 			"\t--count count\tevaluate how many times,default 1\n"
@@ -375,12 +389,15 @@ int main(int argc,char **argv){
 		errx(EXIT_FAILURE,"see --help");
 	opterr=1;
 	for(;;){
-		switch(getopt_long(argc,argv,"pnDt::",ops,NULL)){
+		switch(getopt_long(argc,argv,"pnDt::N",ops,NULL)){
 			case 'p':
 				flag|=EXPR_IF_PROTECT;
 				break;
 			case 'n':
 				flag|=EXPR_IF_NOOPTIMIZE;
+				break;
+			case 'N':
+				flag|=EXPR_IF_NOBUILTIN;
 				break;
 			case 'D':
 				dump=1;

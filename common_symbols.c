@@ -24,6 +24,7 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <netinet/in.h>
+#include <asm-generic/unistd.h>
 #define casting(x,T) ((T)(x))
 #define cast(x,T) expr_cast(x,T)
 /*_Generic(T,\
@@ -348,7 +349,7 @@ double d_frya(size_t n,double *args){
 double d_fprinta(size_t n,double *args){
 	return (double)fprintda((int)args[0],args+1,n-1);
 }
-volatile double vx[128];
+volatile double vx[2];
 void add_common_symbols(struct expr_symset *es){
 	char buf[32];
 	for(size_t i=0;i<(sizeof(vx)/sizeof(*vx));++i){
@@ -498,9 +499,11 @@ void add_common_symbols(struct expr_symset *es){
 	setconst(STDIN_FILENO);
 	setconst(STDOUT_FILENO);
 	setconst(STDERR_FILENO);
+	setconst(AT_FDCWD);
 	expr_symset_add(es,"pid",EXPR_CONSTANT,(double)getpid());
 	expr_symset_add(es,"ppid",EXPR_CONSTANT,(double)getppid());
 	expr_symset_add(es,"uid",EXPR_CONSTANT,(double)getuid());
 	expr_symset_add(es,"gid",EXPR_CONSTANT,(double)getgid());
-
+#define register_syscall(sysid) expr_symset_add(es,"sys_" #sysid,EXPR_CONSTANT,0,(double)(__NR_##sysid))
+#include "systable.c"
 }
