@@ -7,6 +7,7 @@ draw: main.c xgraph/lib/xgraph.a xgraph/header/xdraw.h xgraph common_symbols.o
 calc: calc.c xgraph/lib/xgraph.a xgraph/header/expr.h xgraph common_symbols.o
 	$(CC) $(CFLAG) calc.c common_symbols.o -o calc $(LFLAG)
 common_symbols.o: xgraph/lib/xgraph.a xgraph/header/expr.h xgraph common_symbols.c
+	rm -f systable.c
 	make systable
 	$(CC) $(CFLAG) common_symbols.c -c -o common_symbols.o
 .PHONY:
@@ -37,7 +38,7 @@ xgraph/header/expr.h:
 	make -C xgraph
 .PHONY:
 systable:
-	gcc -dM -E $(PREFIX)/include/asm-generic/unistd.h |grep __NR_ |sed 's/#define __NR_/register_syscall(/g' |sed 's/ .*$$/);/g' >systable.c
+	bash systable.sh >systable.c
 .PHONY:
 clean:
 	rm -f draw calc list wave common_symbols.o systable.c

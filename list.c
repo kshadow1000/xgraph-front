@@ -10,6 +10,8 @@
 #include <time.h>
 #include <math.h>
 #include <err.h>
+#include <string.h>
+#include <limits.h>
 #define psize(s) printf("sizeof(" #s ")=%zu\n",sizeof(s))
 const char *t2s[]={
 	[EXPR_CONSTANT]="Constant",
