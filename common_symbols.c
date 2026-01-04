@@ -24,7 +24,7 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <netinet/in.h>
-#include <asm-generic/unistd.h>
+#include <syscall.h>
 #define casting(x,T) ((T)(x))
 #define cast(x,T) expr_cast(x,T)
 /*_Generic(T,\

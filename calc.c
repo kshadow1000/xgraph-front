@@ -333,6 +333,7 @@ const struct option ops[]={
 	{"dump",0,NULL,'D'},
 	{"timeout",2,NULL,'t'},
 	{"count",1,NULL,0xff01},
+	{"injection",0,NULL,'i'},
 	{NULL},
 };
 void add_common_symbols(struct expr_symset *);
@@ -352,6 +353,7 @@ void show_help(const char *a0){
 			"\t--dump, -D\tdump mode(do not evaluate)\n"
 			"\t--timeout[=seconds,default 1], -t\tset the timeout for evaluation\n"
 			"\t--count count\tevaluate how many times,default 1\n"
+			"\t--injection, -i\tuse injective function only\n"
 			,a0);
 	exit(EXIT_SUCCESS);
 }
@@ -389,7 +391,7 @@ int main(int argc,char **argv){
 		errx(EXIT_FAILURE,"see --help");
 	opterr=1;
 	for(;;){
-		switch(getopt_long(argc,argv,"pnDt::N",ops,NULL)){
+		switch(getopt_long(argc,argv,"pnDt::Ni",ops,NULL)){
 			case 'p':
 				flag|=EXPR_IF_PROTECT;
 				break;
@@ -398,6 +400,9 @@ int main(int argc,char **argv){
 				break;
 			case 'N':
 				flag|=EXPR_IF_NOBUILTIN;
+				break;
+			case 'i':
+				flag|=EXPR_IF_INJECTION;
 				break;
 			case 'D':
 				dump=1;
@@ -432,7 +437,10 @@ break2:
 		err(EXIT_FAILURE,"cannot allocate memory");
 	add_common_symbols(es);
 	if(init_expr5(ep,e,"t",es,flag)<0){
-		errx(EXIT_FAILURE,"expression error:%s (%s)",expr_error(ep->error),ep->errinfo);
+		if(*ep->errinfo)
+			errx(EXIT_FAILURE,"expression error:%s \"%s\"",expr_error(ep->error),ep->errinfo);
+		else
+			errx(EXIT_FAILURE,"expression error:%s",expr_error(ep->error));
 	}
 	if(dump)
 		list(ep,es);
@@ -449,8 +457,10 @@ break2:
 		do {
 		r=expr_eval(ep,0);
 		}while(--count);
-		d_alarm(0.0);
-		signal(SIGALRM,sigold);
+		if(alarm_sec!=0.0){
+			d_alarm(0.0);
+			signal(SIGALRM,sigold);
+		}
 		printdouble(r);
 	}
 	expr_free(ep);
