@@ -27,16 +27,10 @@ void add_common_symbols(struct expr_symset *);
 #define unlikely(cond) __builtin_expect(!!(cond),0)
 static void *xmalloc(size_t size){
 	void *r;
-	if(unlikely(size>=SSIZE_MAX)){
-		warnx("IN xmalloc(size=%zu)\n"
-			"CANNOT ALLOCATE MEMORY",size);
-		goto ab;
-	}
 	r=malloc(size);
 	if(unlikely(!r)){
 		warn("IN xmalloc(size=%zu)\n"
 			"CANNOT ALLOCATE MEMORY",size);
-ab:
 		warnx("ABORTING");
 		abort();
 	}
@@ -44,16 +38,10 @@ ab:
 }
 static void *xrealloc(void *old,size_t size){
 	void *r;
-	if(unlikely(size>=SSIZE_MAX)){
-		warnx("IN xrealloc(old=%p,size=%zu)\n"
-			"CANNOT REALLOCATE MEMORY",old,size);
-		goto ab;
-	}
 	r=realloc(old,size);
 	if(unlikely(!r)){
 		warn("IN xrealloc(old=%p,size=%zu)\n"
 			"CANNOT REALLOCATE MEMORY",old,size);
-ab:
 		warnx("ABORTING");
 		abort();
 	}
