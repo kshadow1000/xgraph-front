@@ -157,9 +157,12 @@ void list_symbol(struct expr_symbol *p){
 		list_symbol(p->next[i]);
 	}
 }
+int adbt=0;
 void list_common(void){
 	struct expr_symset es[1]={EXPR_SYMSET_INITIALIZER};
 	add_common_symbols(es);
+	if(adbt)
+		expr_builtin_symbol_addall(es);
 	list_symbol(es->syms);
 	printf("%zu common symbols,depth=%zu\n",es->size,es->depth);
 	expr_symset_free(es);
@@ -170,6 +173,8 @@ int main(int argc,char **argv){
 	}else {
 		expr_allocator=xmalloc;
 		expr_reallocator=xrealloc;
+		if(!strcmp(argv[1],"b"))
+			adbt=1;
 		list_common();
 	}
 	return EXIT_SUCCESS;

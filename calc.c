@@ -646,6 +646,7 @@ const struct option ops[]={
 	{"keep",0,NULL,'k'},
 	{"detach",0,NULL,'d'},
 	{"getchar",0,NULL,'g'},
+	{"add-builtin",0,NULL,'B'},
 	{"help",0,NULL,'h'},
 	{NULL},
 };
@@ -663,6 +664,7 @@ void show_help(const char *a0){
 			"\t--keep, -k\tkeep symbol sets,use with -d to make symbols visible\n"
 			"\t--detach, -d\tdetach each symbol sets,use with -k to make symbols visible\n"
 			"\t--getchar, -g\tcall getchar() on each instructions if -s/-c is set\n"
+			"\t--add-builtin, -B\tadd builtin symbols to symset\n"
 			,a0);
 	exit(EXIT_SUCCESS);
 }
@@ -670,6 +672,7 @@ int main(int argc,char **argv){
 	char *e;
 	int flag=0;
 	int dump=0;
+	int adbt=0;
 	enum {NORMAL,STEP,CALLBACK} mode=NORMAL;
 	size_t count=1;
 	double alarm_sec=0.0,r;
@@ -680,7 +683,7 @@ int main(int argc,char **argv){
 		errx(EXIT_FAILURE,"see --help");
 	opterr=1;
 	for(;;){
-		switch(getopt_long(argc,argv,"pnDt::Nisckdg",ops,NULL)){
+		switch(getopt_long(argc,argv,"pnDt::NisckdgB",ops,NULL)){
 			case 'p':
 				flag|=EXPR_IF_PROTECT;
 				break;
@@ -698,6 +701,9 @@ int main(int argc,char **argv){
 				break;
 			case 'd':
 				flag|=EXPR_IF_DETACHSYMSET;
+				break;
+			case 'B':
+				adbt=1;
 				break;
 			case 'g':
 				gchr=1;
@@ -743,6 +749,8 @@ break2:
 	if(!es)
 		err(EXIT_FAILURE,"cannot allocate memory");
 	add_common_symbols(es);
+	if(adbt)
+		expr_builtin_symbol_addall(es);
 	if(init_expr5(ep,e,"t",es,flag)<0){
 		if(*ep->errinfo)
 			errx(EXIT_FAILURE,"expression error:%s \"%s\"",expr_error(ep->error),ep->errinfo);
