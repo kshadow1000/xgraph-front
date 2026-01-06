@@ -8,7 +8,7 @@ listen(fd,1);
 0-->rfd;
 while(accept(fd,0,0)->rfd>=0){
 	const(b,byte(8*1024*1024));
-	var(sz);
+	sz=:0;
 	while(read(rfd,b,8*1024*1024)->sz>0){
 		write(rfd,b,sz);
 	};

@@ -193,6 +193,14 @@ const struct inst_info ii[]={
 [EXPR_TO1]={.name="to1",.st=NUL,},
 [EXPR_END]={.name="end",.st=NUL,},
 };
+const char *adst(const double *dst){
+	static char abuf[64+EXPR_SYMLEN];
+	if(dst==EXPR_VOID||dst==EXPR_VOID_NR)
+		strcpy(abuf,"[void]");
+	else
+		sprintf(abuf,"%lg",*dst);
+	return abuf;
+}
 ssize_t varindex(const struct expr *restrict ep,double *v){
 	for(size_t i=0;i<ep->vsize;++i){
 		if(ep->vars[i]==v)return i;
@@ -224,14 +232,14 @@ const char *od(const struct expr *restrict ep,void *addr){
 		strcpy(abuf,"[void]");
 		return abuf;
 	}
-	index=varindex(ep,addr);
-	if(index>=0){
-		sprintf(abuf,"[%zd]",index);
-		return abuf;
-	}
 	p=symbolof(ep,addr);
 	if(p){
 		strcpy(abuf,p);
+		return abuf;
+	}
+	index=varindex(ep,addr);
+	if(index>=0){
+		sprintf(abuf,"[%zd]",index);
 		return abuf;
 	}
 	sprintf(abuf,"u[%zd]",indexofu(addr));
@@ -245,7 +253,7 @@ const char *ainst(const struct expr *restrict ep,struct expr_inst *ip){
 		case NUL:
 			break;
 		case MEM:
-			sprintf(abuf+r," %s",od(ep,ip->un.uaddr));
+			sprintf(abuf+r," %-6s=%lg",od(ep,ip->un.uaddr),*ip->un.src);
 			break;
 		case SUM:
 			sprintf(abuf+r," sum[%zu,%zu,%zu,%zu]",indexof(ip->un.es->fromep),indexof(ip->un.es->toep),indexof(ip->un.es->stepep),indexof(ip->un.es->ep));
@@ -602,9 +610,9 @@ void callee_end(const struct expr *ep,struct expr_inst *ip,void *arg){
 	static char abuf[128];
 	if(hassubexpr(ip->op)){
 		sprintf(abuf,"%zu:expr[%zu]->data[%td]",pop(),indexof(ep),ip-ep->data);
-		printf("%-57s } ok dst=%lg\n",abuf,*ip->dst.dst);
+		printf("%-57s } ok dst=%s\n",abuf,adst(ip->dst.dst));
 	}else {
-		printf(" ok dst=%lg\n",*ip->dst.dst);
+		printf(" ok dst=%s\n",adst(ip->dst.dst));
 	}
 	stop();
 }
