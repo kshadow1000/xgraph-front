@@ -6,12 +6,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "xgraph/header/expr.h"
+#include "xgraph/expr.h"
 #include <time.h>
 #include <math.h>
 #include <err.h>
 #include <string.h>
-#include <limits.h>
+#include <assert.h>
+#include <alloca.h>
 #define psize(s) printf("sizeof(" #s ")=%zu\n",sizeof(s))
 const char *t2s[]={
 	[EXPR_CONSTANT]="Constant",
@@ -47,6 +48,60 @@ static void *xrealloc(void *old,size_t size){
 	}
 	return r;
 }
+const char *aflag(int type,int flag,size_t dim){
+	static char abuf[64];
+	static char abuf1[64];
+	*abuf=0;
+		switch(type){
+			case EXPR_CONSTANT:
+			case EXPR_VARIABLE:
+				return abuf;
+			case EXPR_FUNCTION:
+			case EXPR_ZAFUNCTION:
+			case EXPR_HOTFUNCTION:
+				if(flag&EXPR_SF_INJECTION)
+					strcat(abuf,"I");
+				if(flag&EXPR_SF_UNSAFE)
+					strcat(abuf,"U");
+				return abuf;
+			case EXPR_MDFUNCTION:
+			case EXPR_MDEPFUNCTION:
+				if(flag&EXPR_SF_INJECTION)
+					strcat(abuf,"I");
+				if(flag&EXPR_SF_UNSAFE)
+					strcat(abuf,"U");
+				if(dim)
+					sprintf(abuf1,"%-2s %zu",abuf,dim);
+				else
+					sprintf(abuf1,"%-2s no limit",abuf);
+				return abuf1;
+			default:
+				abort();
+
+		}
+}
+void psymbol(int type,int flag,size_t dim,const char *str,const union expr_symvalue *un){
+		printf("%-28s",str);
+		switch(type){
+			case EXPR_CONSTANT:
+				printf("%-16lg",un->value);
+				break;
+			case EXPR_VARIABLE:
+				printf("%-16lg",*(double *)un->addr);
+				break;
+			case EXPR_FUNCTION:
+			case EXPR_MDFUNCTION:
+			case EXPR_MDEPFUNCTION:
+			case EXPR_ZAFUNCTION:
+			case EXPR_HOTFUNCTION:
+				printf("%-16s",aflag(type,flag,dim));
+				break;
+			default:
+				abort();
+
+		}
+		printf("%s\n",t2s[type]);
+}
 void list(void){
 	srand48(time(NULL)+getpid());
 	psize(struct expr);
@@ -73,98 +128,45 @@ void list(void){
 			printf("%zu symbols\n",p-expr_symbols);
 			break;
 		}
-		printf("%-16s\t%-30s",p->str,t2s[p->type]);
-		switch(p->type){
-			case EXPR_CONSTANT:
-				printf("%g",p->un.value);
-				break;
-			case EXPR_VARIABLE:
-				printf("%g",*(double *)p->un.addr);
-				break;
-			case EXPR_FUNCTION:
-				if(p->flag&EXPR_SF_INJECTION)
-					printf("I ");
-				if(p->flag&EXPR_SF_UNSAFE)
-					printf("U ");
-				break;
-			case EXPR_MDFUNCTION:
-			case EXPR_MDEPFUNCTION:
-				if(p->flag&EXPR_SF_INJECTION)
-					printf("I ");
-				if(p->flag&EXPR_SF_UNSAFE)
-					printf("U ");
-				if(p->dim)
-					printf("%hd",p->dim);
-				else
-					printf("no limit");
-				break;
-			case EXPR_ZAFUNCTION:
-				if(p->flag&EXPR_SF_INJECTION)
-					printf("I ");
-				if(p->flag&EXPR_SF_UNSAFE)
-					printf("U ");
-				break;
-			default:
-				abort();
-
-		}
-		printf("\n");
+		psymbol(p->type,p->flag,p->dim,p->str,&p->un);
 	}
 	return;
 }
 void list_symbol(struct expr_symbol *p){
 	size_t dim;
-	if(!p)
-		return;
-	printf("%-24s\t%-30s",p->str,t2s[p->type]);
 	switch(p->type){
 		case EXPR_CONSTANT:
-			printf("value: %g",p->un.value);
-			break;
 		case EXPR_VARIABLE:
-			printf("value: %g",*(double *)p->un.addr);
-			break;
 		case EXPR_FUNCTION:
-			if(p->flag&EXPR_SF_INJECTION)
-				printf("I ");
-			if(p->flag&EXPR_SF_UNSAFE)
-				printf("U ");
+		case EXPR_ZAFUNCTION:
+			psymbol(p->type,p->flag,0,p->str,&p->un);
 			break;
 		case EXPR_MDFUNCTION:
 		case EXPR_MDEPFUNCTION:
-			if(p->flag&EXPR_SF_INJECTION)
-				printf("I ");
-			if(p->flag&EXPR_SF_UNSAFE)
-				printf("U ");
 			dim=*(size_t *)(p->str+strlen(p->str)+1);
-			if(dim)
-				printf("%zu",dim);
-			else
-				printf("no limit");
-			break;
-		case EXPR_ZAFUNCTION:
-			if(p->flag&EXPR_SF_INJECTION)
-				printf("I ");
-			if(p->flag&EXPR_SF_UNSAFE)
-				printf("U ");
+			psymbol(p->type,p->flag,dim,p->str,&p->un);
 			break;
 		default:
 			abort();
 
 	}
-	printf("\n");
-	for(int i=0;i<EXPR_SYMNEXT;++i){
-		list_symbol(p->next[i]);
-	}
 }
 int adbt=0;
 void list_common(void){
+	size_t n=0;
 	struct expr_symset es[1]={EXPR_SYMSET_INITIALIZER};
 	add_common_symbols(es);
 	if(adbt)
 		expr_builtin_symbol_addall(es);
-	list_symbol(es->syms);
-	printf("%zu common symbols,depth=%zu\n",es->size,es->depth);
+//	expr_symset_callback(es,list_symbol,NULL);
+//	expr_symset_callbacks(es,list_symbol1);
+	expr_symset_foreach(sp,es,alloca(es->depth*EXPR_SYMSET_DEPTHUNIT)){
+		list_symbol(sp);
+		++n;
+	}
+	assert(n==es->size);
+	assert(expr_symset_depth(es)==es->depth);
+	printf("%zu common symbols,depth=%zu\n",n,es->depth);
 	expr_symset_free(es);
 }
 int main(int argc,char **argv){

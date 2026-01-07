@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
-#include "xgraph/header/expr.h"
+#include "xgraph/expr.h"
 #include <time.h>
 #include <math.h>
 #include "prime.c"
@@ -17,7 +17,6 @@
 #include <stdarg.h>
 #include <string.h>
 #include <signal.h>
-#include <limits.h>
 #include <pthread.h>
 #include <errno.h>
 #include <sys/socket.h>
@@ -112,7 +111,7 @@ warpiipi(int,bind,int,struct sockaddr *,socklen_t)
 warpiipi(int,connect,int,struct sockaddr *,socklen_t)
 warpiipp(int,accept,int,struct sockaddr *,socklen_t *)
 double last_sig;
-struct expr *volatile sigep[SIGEV_MAX_SIZE+1];
+struct expr *volatile sigep[64+1];
 void d_setsig(int sig){
  	last_sig=(double)sig;
 }
@@ -349,7 +348,7 @@ double d_frya(size_t n,double *args){
 double d_fprinta(size_t n,double *args){
 	return (double)fprintda((int)args[0],args+1,n-1);
 }
-volatile double vx[2];
+volatile double vx[8];
 void add_common_symbols(struct expr_symset *es){
 	char buf[32];
 	for(size_t i=0;i<(sizeof(vx)/sizeof(*vx));++i){

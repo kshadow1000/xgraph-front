@@ -18,11 +18,10 @@
 #include <sys/wait.h>
 #include <sys/resource.h>
 #include <signal.h>
-#include <limits.h>
 #include <getopt.h>
 #include <stdarg.h>
 #include "bitmap.h"
-#include "xgraph/header/expr.h"
+#include "xgraph/expr.h"
 struct expr_symset *es=NULL;
 void sdtime(double dsec){
 	struct timespec ts;

@@ -11,11 +11,17 @@ common_symbols.o: xgraph/lib/xgraph.a xgraph/header/expr.h xgraph common_symbols
 	make systable
 	$(CC) $(CFLAG) common_symbols.c -c -o common_symbols.o
 .PHONY:
-leak: calc.c xgraph/expr.c xgraph/header/expr.h xgraph common_symbols.o
-	$(CC) -Wall -fsanitize=address -O3 -g calc.c common_symbols.o -o calc xgraph/expr.c -lm
+leak: calc.c xgraph/expr.c common_symbols.c
+	$(CC) -Wall -fsanitize=address -O3 -g calc.c common_symbols.c -o calc xgraph/expr.c -lm
 .PHONY:
-debug: calc.c xgraph/expr.c xgraph/header/expr.h xgraph common_symbols.o
-	$(CC) -Wall -g calc.c common_symbols.o -o calc xgraph/expr.c -lm
+leakl: list.c xgraph/expr.c common_symbols.c
+	$(CC) -Wall -fsanitize=address -O3 -g list.c common_symbols.c -o list xgraph/expr.c -lm
+.PHONY:
+debug: calc.c xgraph/expr.c common_symbols.c
+	$(CC) -Wall -g calc.c common_symbols.c -o calc xgraph/expr.c -lm
+.PHONY:
+debugl: list.c xgraph/expr.c common_symbols.c
+	$(CC) -Wall -g list.c common_symbols.c -o list xgraph/expr.c -lm
 list: list.c xgraph/lib/xgraph.a xgraph/header/expr.h xgraph common_symbols.o
 	$(CC) $(CFLAG) list.c common_symbols.o -o list $(LFLAG)
 symtest: symtest.c xgraph/lib/xgraph.a xgraph/header/expr.h xgraph common_symbols.o
@@ -25,8 +31,6 @@ sorttest: sorttest.c xgraph/lib/xgraph.a xgraph/header/expr.h xgraph common_symb
 wave: wave.c xgraph/lib/xgraph.a
 	$(CC) $(CFLAG) -DTEXT_ENABLED wave.c xgraph/lib/xgraph.a -o wave $(LFLAG)
 xgraph:
-	make -C xgraph
-xgraph/expr.c:
 	make -C xgraph
 xgraph/xdraw.c:
 	make -C xgraph
