@@ -166,6 +166,8 @@ void list_common(void){
 	}
 	assert(n==es->size);
 	assert(expr_symset_depth(es)==es->depth);
+	assert(expr_symset_size(es)==es->size);
+	assert(expr_symset_length(es)==es->length);
 	printf("%zu common symbols,depth=%zu\n",n,es->depth);
 	expr_symset_free(es);
 }

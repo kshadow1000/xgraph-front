@@ -25,7 +25,7 @@ debugl: list.c xgraph/expr.c common_symbols.c
 list: list.c xgraph/lib/xgraph.a xgraph/header/expr.h xgraph common_symbols.o
 	$(CC) $(CFLAG) list.c common_symbols.o -o list $(LFLAG)
 symtest: symtest.c xgraph/lib/xgraph.a xgraph/header/expr.h xgraph common_symbols.o
-	$(CC) $(CFLAG) symtest.c common_symbols.o -o symtest $(LFLAG)
+	$(CC) $(CFLAG) symtest.c common_symbols.o -o symtest $(LFLAG) -g
 sorttest: sorttest.c xgraph/lib/xgraph.a xgraph/header/expr.h xgraph common_symbols.o
 	$(CC) $(CFLAG) sorttest.c common_symbols.o -o sorttest $(LFLAG)
 wave: wave.c xgraph/lib/xgraph.a
