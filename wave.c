@@ -21,7 +21,7 @@
 #include <getopt.h>
 #include <stdarg.h>
 #include "bitmap.h"
-#include "xgraph/expr.h"
+#include "xgraph/expr/expr.h"
 struct expr_symset *es=NULL;
 void sdtime(double dsec){
 	struct timespec ts;
@@ -141,7 +141,7 @@ static void *xrealloc(void *old,size_t size){
 	}
 	return r;
 }
-#include "xgraph/texts/text.h"
+#include "xgraph/graph/texts/text.h"
 struct text {
 	struct sbmp **sbuf;
 	size_t scount;
@@ -248,7 +248,7 @@ next:
 double ftext(double t0){
 	return dcount?ftext2(defts[0],t0):0.0;
 }
-static double ftext2_md(size_t n,double *args){
+static double ftext2_md(double *args,size_t n){
 	n=(size_t)args[1];
 	return n<dcount?ftext2(defts[n],*args):0.0;
 }
@@ -273,7 +273,7 @@ struct text *newdeft(void){
 	return r;
 }
 extern unsigned long sample_freq;
-static double supt(size_t n,const struct expr *args,double input){
+static double supt(const struct expr *args,size_t n,double input){
 	double r=-INFINITY,x;
 	for(unsigned long t=0;;++t){
 		x=(double)t/sample_freq;
@@ -284,7 +284,7 @@ static double supt(size_t n,const struct expr *args,double input){
 	}
 	return r;
 }
-static double inft(size_t n,const struct expr *args,double input){
+static double inft(const struct expr *args,size_t n,double input){
 	double r=+INFINITY,x;
 	for(unsigned long t=0;;++t){
 		x=(double)t/sample_freq;
@@ -295,7 +295,7 @@ static double inft(size_t n,const struct expr *args,double input){
 	}
 	return r;
 }
-static double correct(size_t n,double *args){
+static double correct(double *args,size_t n){
 	double l=args[1],u=args[2];
 	return 2.0*(*args-l)/(u-l)-1;
 }

@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "xgraph/header/expr.h"
+#include "xgraph/expr/expr.h"
 #include <time.h>
 #include <signal.h>
 #include <setjmp.h>
@@ -107,8 +107,8 @@ __attribute__((destructor)) void _ps##atend(void){\
 idex(eps,indexof);
 idex(ps,indexofp);
 idex(ups,indexofu);
-enum odtype{NUL,MEM,SUM,BRANCH,HOT,MD,VMD,VAL,ZVAL};
-char subexpr[]={[NUL]=0,[MEM]=0,[SUM]=1,[BRANCH]=1,[HOT]=1,[MD]=1,[VMD]=1,[VAL]=0,[ZVAL]=0,};
+enum odtype{NUL,MEM,SUM,BRANCH,HOT,MD,VMD,HMD,VAL,ZVAL};
+char subexpr[]={[NUL]=0,[MEM]=0,[SUM]=1,[BRANCH]=1,[HOT]=1,[MD]=1,[VMD]=1,[HMD]=1,[VAL]=0,[ZVAL]=0,};
 #define hassubexpr(_op) subexpr[ii[_op].st]
 struct inst_info {
 	const char *name;
@@ -191,6 +191,7 @@ const struct inst_info ii[]={
 [EXPR_IPP]={.name="ipp",.st=NUL,},
 [EXPR_TO]={.name="to",.st=NUL,},
 [EXPR_TO1]={.name="to1",.st=NUL,},
+[EXPR_HMD]={.name="hmd",.st=HMD,},
 [EXPR_END]={.name="end",.st=NUL,},
 };
 const char *adst(const double *dst){
@@ -271,6 +272,9 @@ const char *ainst(const struct expr *restrict ep,struct expr_inst *ip){
 		case VMD:
 			sprintf(abuf+r," vmd[%zu,%zu,%zu,%zu](%zu)",indexof(ip->un.ev->fromep),indexof(ip->un.ev->toep),indexof(ip->un.ev->stepep),indexof(ip->un.ev->ep),ip->un.ev->max);
 			break;
+		case HMD:
+			sprintf(abuf+r," expr[%zu](%zu)",indexof(ip->un.eh->hotfunc),ip->un.eh->dim);
+			break;
 		case HOT:
 			sprintf(abuf+r," expr[%zu]",indexof(ip->un.hotfunc));
 			break;
@@ -286,215 +290,14 @@ const char *ainst(const struct expr *restrict ep,struct expr_inst *ip){
 	}
 	return abuf;
 }
+size_t line=0;
 void list(const struct expr *restrict ep,const struct expr_symset *restrict esp){
-	char ssrc[EXPR_SYMLEN],sdst[EXPR_SYMLEN],ssym[EXPR_SYMLEN];
-	const char *sop=NULL;
-	ssize_t index;
+//	char ssrc[EXPR_SYMLEN],sdst[EXPR_SYMLEN],ssym[EXPR_SYMLEN];
+//	const char *sop=NULL;
+//	ssize_t index;
 	xprintf("%zu instructions %zu vars in total\n",ep->size,ep->vsize);
-	for(struct expr_inst *ip=ep->data;ip-ep->data<ep->size;++ip){
-		*ssrc=0;
-		*sdst=0;
-		switch(ip->op){
-			case EXPR_COPY:
-				sop="copy";
-				break;
-			case EXPR_CONST:
-				sop="const";
-				sprintf(ssrc,"%g",ip->un.value);
-				break;
-			case EXPR_ALO:
-				sop="alo";
-				sprintf(ssrc,"%zd",ip->un.zd);
-				break;
-			case EXPR_INPUT:
-					sop="input";
-					strcpy(ssrc," ");
-					break;
-			case EXPR_IP:
-					sop="ip";
-					strcpy(ssrc," ");
-					break;
-			case EXPR_IPP:
-					sop="ipp";
-					strcpy(ssrc," ");
-					break;
-			case EXPR_TO:
-					sop="to";
-					strcpy(ssrc," ");
-					break;
-			case EXPR_TO1:
-					sop="to1";
-					strcpy(ssrc," ");
-					break;
-			case EXPR_BL:sop="bl";break;
-			case EXPR_PBL:sop="pbl";break;
-			case EXPR_READ:sop="read";break;
-			case EXPR_WRITE:sop="write";break;
-			case EXPR_OFF:sop="off";break;
-			case EXPR_ZA:sop="za";break;
-			case EXPR_EVAL:sop="eval";break;
-			case EXPR_PZA:sop="pza";break;
-			case EXPR_ADD:sop="add";break;
-			case EXPR_SUB:sop="sub";break;
-			case EXPR_NEXT:sop="next";break;
-			case EXPR_DIFF:sop="diff";break;
-			case EXPR_MUL:sop="mul";break;
-			case EXPR_DIV:sop="div";break;
-			case EXPR_MOD:sop="mod";break;
-			case EXPR_POW:sop="pow";break;
-			case EXPR_AND:sop="and";break;
-			case EXPR_OR:sop="or";break;
-			case EXPR_XOR:sop="xor";break;
-			case EXPR_SHL:sop="shl";break;
-			case EXPR_SHR:sop="shr";break;
-			case EXPR_LJ:sop="lj";break;
-			case EXPR_SJ:
-					sop="sj";
-					strcpy(ssrc," ");
-					break;
-			case EXPR_NEG:
-					sop="neg";
-					strcpy(ssrc," ");
-					break;
-			case EXPR_NOT:
-					sop="not";
-					strcpy(ssrc," ");
-					break;
-			case EXPR_NOTL:
-					sop="notl";
-					strcpy(ssrc," ");
-					break;
-			case EXPR_TSTL:
-					sop="tstl";
-					strcpy(ssrc," ");
-					break;
-			case EXPR_IF:sop="if";goto branch;
-			case EXPR_WHILE:sop="while";goto branch;
-			case EXPR_DON:sop="don";goto branch;
-			case EXPR_DOW:sop="dow";goto branch;
-			case EXPR_SUM:sop="sum";goto sum;
-			case EXPR_INT:sop="int";goto sum;
-			case EXPR_PROD:sop="prod";goto sum;
-			case EXPR_SUP:sop="sup";goto sum;
-			case EXPR_INF:sop="inf";goto sum;
-			case EXPR_ANDN:sop="andn";goto sum;
-			case EXPR_ORN:sop="orn";goto sum;
-			case EXPR_XORN:sop="xorn";goto sum;
-			case EXPR_GCDN:sop="gcdn";goto sum;
-			case EXPR_LCMN:sop="lcmn";goto sum;
-			case EXPR_LOOP:sop="loop";goto sum;
-			case EXPR_FOR:sop="for";goto sum;
-			case EXPR_MD:sop="md";goto md;
-			case EXPR_ME:sop="me";goto md;
-			case EXPR_PMD:sop="pmd";goto md;
-			case EXPR_PME:sop="pme";goto md;
-			case EXPR_PMEP:sop="pmep";goto md;
-			case EXPR_MEP:sop="mep";goto md;
-			case EXPR_VMD:sop="vmd";goto vmd;
-			case EXPR_DO:sop="do";goto hot;
-			case EXPR_DO1:sop="do1";goto hot;
-			case EXPR_WIF:sop="wif";goto hot;
-			case EXPR_EP:sop="ep";goto hot;
-			case EXPR_HOT:
-					sop="hot";
-hot:
-					level+=4;
-					xprintf("hot function %p\n",ip->un.hotfunc);
-					list(ip->un.hotfunc,esp);
-					level-=4;
-					break;
-			case EXPR_GT:sop="gt";break;
-			case EXPR_GE:sop="ge";break;
-			case EXPR_LT:sop="lt";break;
-			case EXPR_LE:sop="le";break;
-			case EXPR_SEQ:sop="seq";break;
-			case EXPR_SNE:sop="sne";break;
-			case EXPR_SGE:sop="sge";break;
-			case EXPR_SLE:sop="sle";break;
-			case EXPR_EQ:sop="eq";break;
-			case EXPR_NE:sop="ne";break;
-			case EXPR_ANDL:sop="andl";break;
-			case EXPR_ORL:sop="orl";break;
-			case EXPR_XORL:sop="xorl";break;
-			case EXPR_END:
-					sop="end";
-					strcpy(ssrc," ");
-					break;
-sum:
-					level+=4;
-					xprintf("struct expr_suminfo %p index:%p\n",ip->un.es,&ip->un.es->index);
-					xprintf("%p->fromep\n",ip->un.es);
-					list(ip->un.es->fromep,esp);
-					xprintf("%p->toep\n",ip->un.es);
-					list(ip->un.es->toep,esp);
-					xprintf("%p->stepep\n",ip->un.es);
-					list(ip->un.es->stepep,esp);
-					xprintf("%p->ep\n",ip->un.es);
-					list(ip->un.es->ep,esp);
-					level-=4;
-					break;
-branch:
-					level+=4;
-					xprintf("struct expr_branchinfo %p\n",ip->un.eb);
-					xprintf("%p->cond\n",ip->un.eb);
-					list(ip->un.eb->cond,esp);
-					xprintf("%p->body\n",ip->un.eb);
-					list(ip->un.eb->body,esp);
-					xprintf("%p->value\n",ip->un.eb);
-					list(ip->un.eb->value,esp);
-					level-=4;
-					break;
-md:
-					level+=4;
-					if(addr2sym(ep,esp,ssym,ip->un.em->un.func)<0)
-						sprintf(ssym,"%p",ip->un.em->un.func);
-					xprintf("struct expr_mdinfo %p dim=%zu func:%s\n",ip->un.em,ip->un.em->dim,ssym);
-					for(size_t i=0;i<ip->un.em->dim;++i){
-					xprintf("dimension %zu\n",i);
-					list(ip->un.em->eps+i,esp);
-					}
-					level-=4;
-					break;
-vmd:
-					level+=4;
-					if(addr2sym(ep,esp,ssym,ip->un.ev->func)<0)
-						sprintf(ssym,"%p",ip->un.ev->func);
-					xprintf("struct expr_vmdinfo %p index:%p func:%s\n",ip->un.ev,&ip->un.ev->index,ssym);
-					xprintf("%p->fromep\n",ip->un.ev);
-					list(ip->un.ev->fromep,esp);
-					xprintf("%p->toep\n",ip->un.ev);
-					list(ip->un.ev->toep,esp);
-					xprintf("%p->stepep\n",ip->un.ev);
-					list(ip->un.ev->stepep,esp);
-					xprintf("%p->ep\n",ip->un.ev);
-					list(ip->un.ev->ep,esp);
-					level-=4;
-					break;
-
-		}
-		if(!sop)abort();
-		if(!*ssrc){
-			index=varindex(ep,ip->un.src);
-			if(index>=0){
-				if(expr_isnan(*ip->un.src))
-					sprintf(ssrc,"vars[%zd]",index);
-				else
-					sprintf(ssrc,"vars[%zd]=%g",index,*ip->un.src);
-			}else if(addr2sym(ep,esp,ssrc,ip->un.src)<0){
-				sprintf(ssrc,"%p",ip->un.src);
-			}
-		}
-		if(!*sdst){
-			index=varindex(ep,ip->dst.dst);
-			if(index>=0)if(expr_isnan(*ip->dst.dst))
-				sprintf(sdst,"vars[%zd]",index);
-			else
-				sprintf(sdst,"vars[%zd]=%g",index,*ip->dst.dst);
-			else if(addr2sym(ep,esp,sdst,ip->dst.dst)<0)
-				sprintf(sdst,"%p",ip->dst.dst);
-		}
-		xprintf("%-8s%s\t%s\n",sop,sdst,ssrc);
-	}
+	for(struct expr_inst *ip=ep->data;ip-ep->data<ep->size;++ip)
+		xprintf("%zu:expr[%zu]->data[%td] %s\n",line++,indexof(ep),ip-ep->data,ainst(ep,ip));
 }
 //
 void *readall(int fd,ssize_t *len){
@@ -580,7 +383,6 @@ __attribute__((destructor)) void atend(void){
 	if(rbuf)
 		free(rbuf);
 }
-size_t line=0;
 #define STACK_SIZE (128*1024)
 size_t sstack[STACK_SIZE]={0};
 size_t *ssp=sstack;

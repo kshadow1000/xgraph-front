@@ -17,7 +17,8 @@
 #include <errno.h>
 #include <float.h>
 #include <pthread.h>
-#include "xgraph/header/xdraw.h"
+#include "xgraph/graph/graph.h"
+#include "xgraph/expr/expr.h"
 #define SIZE 16
 #define BOLD 2
 #define FBOLD 1
@@ -63,6 +64,18 @@ ssize_t readall(int fd,void **pbuf){
 	*pbuf=buf;
 	return ret;
 }
+double evalx(double input,void *arg){
+	return expr_eval(*(void **)arg,input);
+}
+double evaly(double input,void *arg){
+	return expr_eval(*((void **)arg+1),input);
+}
+void graph_drawep_mt(struct graph *restrict gp,uint32_t color,int32_t bold,const struct expr *xeps,const struct expr *yeps,double from,double to,double step,volatile double *currents,int thread){
+	const void *a[2];
+	a[0]=xeps;
+	a[1]=yeps;
+	graph_draw_mt(gp,color,bold,evalx,evaly,a,from,to,step,currents,thread);
+}
 volatile double *currents;
 volatile double n1=1.6,dpid;
 int thread=1,ioret=0;
@@ -78,7 +91,7 @@ struct expr_symset es[1];
 double maxy=SIZE,miny=-SIZE,maxx=SIZE,minx=-SIZE,from=-SIZE,to=SIZE,gapx=1.0,gapy=1.0;
 double gap;
 char *bar,*wbuf;
-double draw_connect(size_t n,double *args){
+double draw_connect(double *args,size_t n){
 	assert(n==4);
 	graph_connect(&g,color,0,args[0],args[1],args[2],args[3]);
 	return NAN;

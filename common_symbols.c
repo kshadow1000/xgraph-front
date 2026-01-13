@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
-#include "xgraph/expr.h"
+#include "xgraph/expr/expr.h"
 #include <time.h>
 #include <math.h>
 #include "prime.c"
@@ -20,6 +20,7 @@
 #include <pthread.h>
 #include <errno.h>
 #include <sys/socket.h>
+#include <sys/random.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <netinet/in.h>
@@ -46,31 +47,31 @@
 	rtype r=(rtype)sym(casting(x,atype));\
 	return cast(r,double);\
 }
-#define warp2(rtype,sym,at0,at1) static double d_##sym(size_t n,double *v){\
+#define warp2(rtype,sym,at0,at1) static double d_##sym(double *v,size_t n){\
 	rtype r=(rtype)sym(casting(v[0],at0),casting(v[1],at1));\
 	return castingd(r);\
 }
-#define warppip(rtype,sym,at0,at1) static double d_##sym(size_t n,double *v){\
+#define warppip(rtype,sym,at0,at1) static double d_##sym(double *v,size_t n){\
 	rtype r=(rtype)sym(casting(v[0],at0),cast(v[1],at1));\
 	return expr_cast(r,double);\
 }
-#define warpppi(rtype,sym,at0,at1) static double d_##sym(size_t n,double *v){\
+#define warpppi(rtype,sym,at0,at1) static double d_##sym(double *v,size_t n){\
 	rtype r=(rtype)sym(cast(v[0],at0),casting(v[1],at1));\
 	return expr_cast(r,double);\
 }
-#define warp3(rtype,sym,at0,at1,at2) static double d_##sym(size_t n,double *v){\
+#define warp3(rtype,sym,at0,at1,at2) static double d_##sym(double *v,size_t n){\
 	rtype r=(rtype)sym(casting(v[0],at0),casting(v[1],at1),casting(v[2],at2));\
 	return castingd(r);\
 }
-#define warpiipi(rtype,sym,at0,at1,at2) static double d_##sym(size_t n,double *v){\
+#define warpiipi(rtype,sym,at0,at1,at2) static double d_##sym(double *v,size_t n){\
 	rtype r=(rtype)sym(casting(v[0],at0),cast(v[1],at1),casting(v[2],at2));\
 	return castingd(r);\
 }
-#define warpiipp(rtype,sym,at0,at1,at2) static double d_##sym(size_t n,double *v){\
+#define warpiipp(rtype,sym,at0,at1,at2) static double d_##sym(double *v,size_t n){\
 	rtype r=(rtype)sym(casting(v[0],at0),cast(v[1],at1),cast(v[2],at2));\
 	return castingd(r);\
 }
-#define warpipii(rtype,sym,at0,at1,at2) static double d_##sym(size_t n,double *v){\
+#define warpipii(rtype,sym,at0,at1,at2) static double d_##sym(double *v,size_t n){\
 	rtype r=(rtype)sym(cast(v[0],at0),n>1?casting(v[1],at1):0,n>2?casting(v[2],at2):0);\
 	return castingd(r);\
 }
@@ -118,7 +119,7 @@ void d_setsig(int sig){
 void d_sigep(int sig){
 	expr_eval(sigep[sig],(double)sig);
 }
-double d_signalep(size_t n,double *v){
+double d_signalep(double *v,size_t n){
 	int s=(int)v[0];
 	sigep[s]=cast(v[1],struct expr *);
 	return cast(signal(s,d_sigep),double);
@@ -192,7 +193,7 @@ double d_alarm(double x){
 #define a2s(buf,args,size) buf=alloca(size+1);\
 	for(size_t i=0;i<size;++i)\
 		buf[i]=(char)*(args++)
-double d_write(size_t n,double *args){
+double d_write(double *args,size_t n){
 	size_t size;
 	union {
 		void *buf;
@@ -204,7 +205,7 @@ double d_write(size_t n,double *args){
 	size=(size_t)*(++args);
 	return write(fd,un.buf,size);
 }
-double d_read(size_t n,double *args){
+double d_read(double *args,size_t n){
 	size_t size;
 	union {
 		void *buf;
@@ -218,7 +219,7 @@ double d_read(size_t n,double *args){
 }
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat"
-double d_printf(size_t n,double *args){
+double d_printf(double *args,size_t n){
 	const char *fmt=cast(*args,const char *);
 	switch(n){
 		case 1:return (double)printf(fmt);
@@ -232,7 +233,7 @@ double d_printf(size_t n,double *args){
 		default:return (double)printf("Too many args!");
 	}
 }
-double d_printk(size_t n,double *args){
+double d_printk(double *args,size_t n){
 	const char *fmt=cast(*args,const char *);
 	int r;
 	//pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
@@ -261,7 +262,7 @@ err:
 	return -1.0;
 }
 #pragma GCC diagnostic pop
-/*double d_inet_addr(size_t n,double *args){
+/*double d_inet_addr(double *args,size_t n){
 	switch(n){
 		case 1:
 			return (double)(uint32_t)*args;
@@ -326,26 +327,26 @@ double d_puts(double x){
 	un.d=x;*/
 	return (double)puts(expr_cast(x,const char *));
 }
-double d_fprint(size_t n,double *args){
+double d_fprint(double *args,size_t n){
 	return (double)fprintd((int)args[0],args[1]);
 }
-double d_printa(size_t n,double *args){
+double d_printa(double *args,size_t n){
 	return (double)fprintda(STDOUT_FILENO,args,n);
 }
-double d_sorta_old(size_t n,double *args){
+double d_sorta_old(double *args,size_t n){
 	expr_sort_old(args,n);
 	return (double)fprintda(STDOUT_FILENO,args,n);
 }
-double d_sorta(size_t n,double *args){
+double d_sorta(double *args,size_t n){
 	if(expr_sort4(args,n,malloc,free)<0)
 		return NAN;
 	return (double)fprintda(STDOUT_FILENO,args,n);
 }
-double d_frya(size_t n,double *args){
+double d_frya(double *args,size_t n){
 	expr_fry(args,n);
 	return (double)fprintda(STDOUT_FILENO,args,n);
 }
-double d_fprinta(size_t n,double *args){
+double d_fprinta(double *args,size_t n){
 	return (double)fprintda((int)args[0],args+1,n-1);
 }
 volatile double vx[8];
@@ -499,6 +500,9 @@ void add_common_symbols(struct expr_symset *es){
 	setconst(STDOUT_FILENO);
 	setconst(STDERR_FILENO);
 	setconst(AT_FDCWD);
+	setconst(GRND_NONBLOCK);
+	setconst(GRND_RANDOM);
+	setconst(GRND_INSECURE);
 	expr_symset_add(es,"pid",EXPR_CONSTANT,(double)getpid());
 	expr_symset_add(es,"ppid",EXPR_CONSTANT,(double)getppid());
 	expr_symset_add(es,"uid",EXPR_CONSTANT,(double)getuid());

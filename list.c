@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "xgraph/expr.h"
+#include "xgraph/expr/expr.h"
 #include <time.h>
 #include <math.h>
 #include <err.h>
@@ -26,6 +26,8 @@ const char *t2s[]={
 void add_common_symbols(struct expr_symset *);
 #define likely(cond) __builtin_expect(!!(cond),1)
 #define unlikely(cond) __builtin_expect(!!(cond),0)
+int allocated=0;
+int freed=0;
 static void *xmalloc(size_t size){
 	void *r;
 	r=malloc(size);
@@ -35,6 +37,7 @@ static void *xmalloc(size_t size){
 		warnx("ABORTING");
 		abort();
 	}
+	++allocated;
 	return r;
 }
 static void *xrealloc(void *old,size_t size){
@@ -47,6 +50,10 @@ static void *xrealloc(void *old,size_t size){
 		abort();
 	}
 	return r;
+}
+void free_hook(void *p){
+	free(p);
+	++freed;
 }
 const char *aflag(int type,int flag,size_t dim){
 	static char abuf[64];
@@ -139,12 +146,12 @@ void list_symbol(struct expr_symbol *p){
 		case EXPR_VARIABLE:
 		case EXPR_FUNCTION:
 		case EXPR_ZAFUNCTION:
-			psymbol(p->type,p->flag,0,p->str,&p->un);
+			psymbol(p->type,p->flag,0,p->str,expr_symset_un(p));
 			break;
 		case EXPR_MDFUNCTION:
 		case EXPR_MDEPFUNCTION:
 			dim=*(size_t *)(p->str+strlen(p->str)+1);
-			psymbol(p->type,p->flag,dim,p->str,&p->un);
+			psymbol(p->type,p->flag,dim,p->str,expr_symset_un(p));
 			break;
 		default:
 			abort();
@@ -160,7 +167,7 @@ void list_common(void){
 		expr_builtin_symbol_addall(es);
 //	expr_symset_callback(es,list_symbol,NULL);
 //	expr_symset_callbacks(es,list_symbol1);
-	expr_symset_foreach(sp,es,alloca(es->depth*EXPR_SYMSET_DEPTHUNIT)){
+	expr_symset_foreach4(sp,es,alloca(es->depth*EXPR_SYMSET_DEPTHUNIT),EXPR_SYMNEXT){
 		list_symbol(sp);
 		++n;
 	}
@@ -169,17 +176,25 @@ void list_common(void){
 	assert(expr_symset_size(es)==es->size);
 	assert(expr_symset_length(es)==es->length);
 	printf("%zu common symbols,depth=%zu\n",n,es->depth);
+	//printf("size:%zu,size_m:%zu,length:%zu,length_m:%zu,removed:%zu,removed_m:%zu,depth:%zu,depth_n:%zu,depth_nm:%zu,\n",es->size,es->size_m,es->length,es->length_m,es->removed,es->removed_m,es->depth,es->depth_n,es->depth_nm);
+	expr_symset_remove(es,"x0",2);
+	//printf("size:%zu,size_m:%zu,length:%zu,length_m:%zu,removed:%zu,removed_m:%zu,depth:%zu,depth_n:%zu,depth_nm:%zu,\n",es->size,es->size_m,es->length,es->length_m,es->removed,es->removed_m,es->depth,es->depth_n,es->depth_nm);
+	expr_symset_correct(es);
+	//printf("size:%zu,size_m:%zu,length:%zu,length_m:%zu,removed:%zu,removed_m:%zu,depth:%zu,depth_n:%zu,depth_nm:%zu,\n",es->size,es->size_m,es->length,es->length_m,es->removed,es->removed_m,es->depth,es->depth_n,es->depth_nm);
 	expr_symset_free(es);
 }
 int main(int argc,char **argv){
+//	expr_symset_allow_heap_stack=1;
 	if(argc<2){
 		list();
 	}else {
 		expr_allocator=xmalloc;
 		expr_reallocator=xrealloc;
+		expr_deallocator=free_hook;
 		if(!strcmp(argv[1],"b"))
 			adbt=1;
 		list_common();
 	}
+	//printf("allocated:%d,freed:%d\n",allocated,freed);
 	return EXIT_SUCCESS;
 }

@@ -6,7 +6,6 @@
 #include <signal.h>
 #include "xgraph/header/expr.h"
 #include <time.h>
-#include <limits.h>
 #include <err.h>
 //#define printf(f,...) 1
 void add_common_symbols(struct expr_symset *es);
@@ -43,7 +42,8 @@ int main(int argc,char **argv){
 		for(size_t j=0;j<times;++j){
 			randomize(rv,i);
 			dt=dtime();
-			r=expr_sort4(rv,i,malloc,free);
+			//r=expr_sort4(rv,i,malloc,free);
+			expr_sortq(rv,i);r=0;
 			t3+=dtime()-dt;
 			if(r<0){
 				fputs("CANNOT ALLOCATE MEMORY\n",stderr);
