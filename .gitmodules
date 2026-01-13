@@ -1,0 +1,3 @@
+[submodule "xgraph"]
+	path = xgraph
+	url = https://github.com/rd-bt/xgraph.git
