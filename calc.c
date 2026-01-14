@@ -187,11 +187,12 @@ const struct inst_info ii[]={
 [EXPR_ALO]={.name="alo",.st=ZVAL,},
 [EXPR_SJ]={.name="sj",.st=NUL,},
 [EXPR_LJ]={.name="lj",.st=MEM,},
-[EXPR_IP]={.name="ip",.st=NUL,},
+[EXPR_IP]={.name="ip",.st=ZVAL,},
 [EXPR_IPP]={.name="ipp",.st=NUL,},
 [EXPR_TO]={.name="to",.st=NUL,},
 [EXPR_TO1]={.name="to1",.st=NUL,},
 [EXPR_HMD]={.name="hmd",.st=HMD,},
+[EXPR_RET]={.name="ret",.st=MEM,},
 [EXPR_END]={.name="end",.st=NUL,},
 };
 const char *adst(const double *dst){
@@ -254,7 +255,7 @@ const char *ainst(const struct expr *restrict ep,struct expr_inst *ip){
 		case NUL:
 			break;
 		case MEM:
-			sprintf(abuf+r," %-6s=%lg",od(ep,ip->un.uaddr),*ip->un.src);
+			sprintf(abuf+r," %-5s=%.3lg",od(ep,ip->un.uaddr),*ip->un.src);
 			break;
 		case SUM:
 			sprintf(abuf+r," sum[%zu,%zu,%zu,%zu]",indexof(ip->un.es->fromep),indexof(ip->un.es->toep),indexof(ip->un.es->stepep),indexof(ip->un.es->ep));
@@ -551,6 +552,7 @@ break2:
 	if(!es)
 		err(EXIT_FAILURE,"cannot allocate memory");
 	add_common_symbols(es);
+	expr_symset_add(es,"ret",EXPR_HOTFUNCTION,0,"(ep,val){reset(end);([ep]#([ep#SIZE_OFF]##(0#1))*INSTLEN)-->end;(end#-INSTLEN)->[[ep#IPP_OFF]];val->[[end]]}");
 	if(adbt)
 		expr_builtin_symbol_addall(es);
 	if(init_expr5(ep,e,"t",es,flag)<0){

@@ -648,7 +648,7 @@ show_help:
 				raw=1;
 				break;
 			case 'h':
-				if(!expr_symset_add(es,hotsym,EXPR_HOTFUNCTION,0,optarg,"t"))
+				if(!expr_symset_add(es,hotsym,EXPR_HOTFUNCTION,0,optarg))
 					errx(EXIT_FAILURE,"cannot add hot function");
 				break;
 			case 'H':
