@@ -20,7 +20,7 @@
 #include <signal.h>
 #include <getopt.h>
 #include <stdarg.h>
-#include "bitmap.h"
+#include "xgraph/graph/bitmap.h"
 #include "xgraph/expr/expr.h"
 struct expr_symset *es=NULL;
 void sdtime(double dsec){

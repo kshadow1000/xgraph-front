@@ -21,6 +21,9 @@ leak: calc.c xgraph/expr/expr.c common_symbols.c
 leakl: list.c xgraph/expr/expr.c common_symbols.c
 	$(CC) -Wall -fsanitize=address -O3 -g list.c common_symbols.c -o list xgraph/expr/expr.c -lm
 .PHONY:
+leakd: main.c xgraph/expr/expr.c xgraph/graph/graph.c common_symbols.c
+	$(CC) -Wall -fsanitize=address -O3 -g main.c common_symbols.c -o draw xgraph/expr/expr.c xgraph/graph/graph.c xgraph/graph/texts/text.c xgraph/graph/texts/sbmp.c -lm
+.PHONY:
 debug: calc.c xgraph/expr/expr.c common_symbols.c
 	$(CC) -Wall -g calc.c common_symbols.c -o calc xgraph/expr/expr.c -lm
 .PHONY:
@@ -38,6 +41,10 @@ xgraph/xgraph.a: xgraph
 .PHONY:
 systable:
 	bash systable.sh >systable.c
+.PHONY:
+redo:
+	make clean
+	make
 .PHONY:
 clean:
 	rm -f draw calc list wave symtest sorttest common_symbols.o systable.c

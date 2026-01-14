@@ -19,6 +19,9 @@
 #include <pthread.h>
 #include "xgraph/graph/graph.h"
 #include "xgraph/expr/expr.h"
+//argscan
+#include "argscan.c"
+//argscan end
 #define SIZE 16
 #define BOLD 2
 #define FBOLD 1
@@ -77,7 +80,7 @@ void graph_drawep_mt(struct graph *restrict gp,uint32_t color,int32_t bold,const
 	graph_draw_mt(gp,color,bold,evalx,evaly,a,from,to,step,currents,thread);
 }
 volatile double *currents;
-volatile double n1=1.6,dpid;
+volatile double n1=1.6;
 int thread=1,ioret=0;
 int force_ffmpeg=0;
 int32_t width=RATIO,height=RATIO;
@@ -89,8 +92,8 @@ struct expr *xeps,*yeps;
 struct winsize wsize;
 struct expr_symset es[1];
 double maxy=SIZE,miny=-SIZE,maxx=SIZE,minx=-SIZE,from=-SIZE,to=SIZE,gapx=1.0,gapy=1.0;
-double gap;
 char *bar,*wbuf;
+const char *ex="t",*para="t";
 double draw_connect(double *args,size_t n){
 	assert(n==4);
 	graph_connect(&g,color,0,args[0],args[1],args[2],args[3]);
@@ -101,9 +104,10 @@ void *drawing(void *args){
 	//graph_drawep(&g,color,FBOLD,xep,yep,from,to,step,currents);
 	pthread_exit(NULL);
 }
-void drawat(const char *ex,const char *ey,const char *para){
+int drawat(char *ey){
 	int srate,lrate,mrate,pc,mpc;
 	pthread_t pt;
+	double gap=(to-from)/thread;
 	char *wbuf0,ei[EXPR_SYMLEN];
 		xeps=new_expr7(ex,para,es,0,thread,&pc,ei);
 		if(!xeps)errx(EXIT_FAILURE,"x expression error:%s (%s)",expr_error(pc),ei);
@@ -188,6 +192,7 @@ void drawat(const char *ex,const char *ey,const char *para){
 	pthread_join(pt,NULL);
 	expr_free(xeps);
 	expr_free(yeps);
+	return 0;
 }
 void writefile(const char *file,const void *buf,size_t sz){
 	int pfd[2];
@@ -215,14 +220,15 @@ void writefile(const char *file,const void *buf,size_t sz){
 			close(pfd[0]);
 			tofd=pfd[1];
 		}else{
-		tofd=open(file,O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
-		if(tofd<0)
-			err(EXIT_FAILURE,"cannot open %s",file);
+			tofd=open(file,O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
+			if(tofd<0)
+				err(EXIT_FAILURE,"cannot open %s",file);
 		}
 	}
 	write(tofd,buf,sz);
 	close(tofd);
-	if(!pid)errx(EXIT_SUCCESS,"Done");
+	if(!pid)
+		errx(EXIT_SUCCESS,"Done");
 	waitpid(pid,&tofd,0);
 	if(WIFEXITED(tofd)&&WEXITSTATUS(tofd)==EXIT_SUCCESS)
 		errx(EXIT_SUCCESS,"Done");
@@ -244,78 +250,69 @@ ffmpeg:
 		errx(EXIT_SUCCESS,"Done");
 	errx(EXIT_SUCCESS,"ffmpeg error");
 }
-int main(int argc,char **argv){
-	const char *xexpr="t";
-	int fromfd;
-	char *frombmp=NULL,*frombuf=NULL,*file=NULL;
-	size_t fromsize;
-	int no_connect=0;
-	srand48(time(NULL)+getpid());
-	barlen=ioctl(STDERR_FILENO,TIOCGWINSZ,&wsize)>=0?
-	wsize.ws_col-28:0;
-	dpid=(double)getpid();
-	//printf("row:%d col:%d\n",wsize.ws_row,wsize.ws_col);
-	init_expr_symset(es);
-	for(char **cnt=argv+1;*cnt;++cnt){
-		if(!strcmp(*cnt,"--thread")){
-			if(sscanf(*(++cnt),"%d",&thread)<1)errx(EXIT_FAILURE,"invaild thread");
-		}else if(!strcmp(*cnt,"--ratio")){
-			if(sscanf(*(++cnt),"%dx%d",&width,&height)<2)errx(EXIT_FAILURE,"invaild ratio");
-		}else if(!strcmp(*cnt,"--frombmp")){
-			frombmp=*(++cnt);
-		}else if(!strcmp(*cnt,"-x")){
-			++cnt;
-		}else if(!strcmp(*cnt,"--no-connect")){
-			no_connect=1;
-		}else if(!strcmp(*cnt,"--minx")){
-			if(sscanf(*(++cnt),"%lf",&minx)<1)
-				errx(EXIT_FAILURE,"invaild minx");
-		}else if(!strcmp(*cnt,"--maxx")){
-			if(sscanf(*(++cnt),"%lf",&maxx)<1)
-				errx(EXIT_FAILURE,"invaild maxx");
-		}else if(!strcmp(*cnt,"--miny")){
-			if(sscanf(*(++cnt),"%lf",&miny)<1)
-				errx(EXIT_FAILURE,"invaild miny");
-		}else if(!strcmp(*cnt,"--maxy")){
-			if(sscanf(*(++cnt),"%lf",&maxy)<1)
-				errx(EXIT_FAILURE,"invaild maxy");
-		}else if(!strcmp(*cnt,"--radius")){
-			if(sscanf(*(++cnt),"%lf",&maxx)<1)
-				errx(EXIT_FAILURE,"invaild radius");
-			maxy=maxx;
-			miny=minx=-maxx;
-		}else if(!strcmp(*cnt,"--gapx")){
-			if(sscanf(*(++cnt),"%lf",&gapx)<1)
-				errx(EXIT_FAILURE,"invaild step");
-		}else if(!strcmp(*cnt,"--gapy")){
-			if(sscanf(*(++cnt),"%lf",&gapy)<1)
-				errx(EXIT_FAILURE,"invaild step");
-		}else if(!strcmp(*cnt,"-nv")){
-			wsize.ws_row=3;
-		}else if(!strcmp(*cnt,"-f")&&cnt-argv<argc-3){
-			char *buf,*p1,*p;
-			p1=*(++cnt);
-			if((p=strchr(*(++cnt),':'))){
-				buf=*cnt;
-				*(p++)=0;
-			}else {
-				buf="t";
-				p=*cnt;
-			}
-			expr_symset_add(es,p1,EXPR_HOTFUNCTION,0,p,buf);
-		}if(!strcmp(*cnt,"-F")){
-			force_ffmpeg=1;
-		}else if(!strcmp(*cnt,"--step")){
-			++cnt;
-		}else if(!strcmp(*cnt,"--color")){
-			++cnt;
-		}else if(!strcmp(*cnt,"-o")){
-			file=*(++cnt);
-		}
+int a_nv(void){
+	wsize.ws_row=3;
+	return 0;
+}
+int a_ratio(char *cnt){
+	if(sscanf(cnt,"%dx%d",&width,&height)<2)
+		errx(EXIT_FAILURE,"invaild ratio");
+	return 0;
+}
+int no_connect=0;
+char *frombmp=NULL,*frombuf=NULL,*file=NULL;
+int printhelp(void);
+#define ARG(a1,a2,dst,t,p) {.name=a1,.alias=a2,.un={.uval=dst},.type=t,.period=p,}
+const struct argtype ats[]={
+	ARG("thread","T",&thread,AT_INT,0),
+	ARG("ratio",NULL,a_ratio,AT_CALL,0),
+	ARG("frombmp",NULL,&frombmp,AT_STR,0),
+	ARG(NULL,"x",&ex,AT_STR,1),
+	ARG("no-connect",NULL,&no_connect,AT_BOOLX,0),
+	ARG("minx",NULL,&minx,AT_DOUBLE,0),
+	ARG("maxx",NULL,&maxx,AT_DOUBLE,0),
+	ARG("miny",NULL,&miny,AT_DOUBLE,0),
+	ARG("maxy",NULL,&maxy,AT_DOUBLE,0),
+	ARG("gapx",NULL,&gapx,AT_DOUBLE,0),
+	ARG("gapy",NULL,&gapy,AT_DOUBLE,0),
+	ARG(NULL,"nv",a_nv,AT_CALLZ,0),
+	ARG(NULL,"F",&force_ffmpeg,AT_BOOL,0),
+	ARG("output","o",&file,AT_STR,0),
+	ARG("from",NULL,&from,AT_DOUBLE,1),
+	ARG("to",NULL,&to,AT_DOUBLE,1),
+	ARG("step",NULL,&step,AT_DOUBLE,1),
+	ARG("color",NULL,&color,AT_INT,1),
+	ARG("help","h",printhelp,AT_CALLZ,0),
+	{NULL,NULL}
+//	ARG("",,&,AT_,0),
+//	ARG("",NULL,&,AT_DOUBLE,0),
+};
+int printhelp(void){
+	for(const struct argtype *atp=ats;atp->name||atp->alias;++atp){
+		if(atp->name&&atp->alias)
+			fprintf(stderr,"--%-12s,-%-4s\n",atp->name,atp->alias);
+		else if(atp->name)
+			fprintf(stderr,"--%-12s\n",atp->name);
+		else
+			fprintf(stderr,"%-15s-%-4s\n","",atp->alias);
 	}
-	if(thread<1)thread=1;
-	if(thread<2)wsize.ws_row=3;
-	if(!file)errx(EXIT_FAILURE,"no output file (-o)");
+	exit(EXIT_SUCCESS);
+}
+int main(int argc,char **argv){
+	int fromfd;
+	size_t fromsize;
+	barlen=ioctl(STDERR_FILENO,TIOCGWINSZ,&wsize)>=0?wsize.ws_col-28:0;
+	init_expr_symset(es);
+	if(argc<2)
+		errx(EXIT_FAILURE,"see --help");
+	if(argscan(argc-1,argv+1,0,ats,NULL)<0)
+		exit(EXIT_FAILURE);
+	if(!file)
+		errx(EXIT_FAILURE,"no output file (-o)");
+	if(thread<1)
+		thread=1;
+	if(thread<2)
+		wsize.ws_row=3;
 	if(frombmp){
 		fromfd=open(frombmp,O_RDONLY);
 		if(fromfd<0){
@@ -338,7 +335,8 @@ int main(int argc,char **argv){
 		step=graph_pixelstep(&g);
 	}
 	g.connect=!no_connect;
-	if(!frombuf)graph_fill(&g,0xffffff);
+	if(!frombuf)
+		graph_fill(&g,0xffffff);
 	outstring("drawing axis...");
 	//graph_fill(&g,0xffffff);
 	graph_draw_grid(&g,0xbfbfbf,0*BOLD,gapx/4.0,gapy/4.0);
@@ -354,65 +352,16 @@ int main(int argc,char **argv){
 	expr_symset_add(es,"draw_connect",EXPR_MDFUNCTION,0,draw_connect,4ul);
 	add_common_symbols(es);
 	//draw start
-	for(char **cnt=argv+1;*cnt;++cnt){
-		if(!strcmp(*cnt,"--thread")){
-			++cnt;
-		}else if(!strcmp(*cnt,"--frombmp")){
-			++cnt;
-		}else if(!strcmp(*cnt,"--ratio")){
-			++cnt;
-		}else if(!strcmp(*cnt,"--no-connect")){
-		}else if(!strcmp(*cnt,"-nv")){
-		}else if(!strcmp(*cnt,"-F")){
-		}else if(!strcmp(*cnt,"--from")){
-			if(sscanf(*(++cnt),"%lf",&from)<1)
-				errx(EXIT_FAILURE,"invaild from");
-		}else if(!strcmp(*cnt,"--to")){
-			if(sscanf(*(++cnt),"%lf",&to)<1)
-				errx(EXIT_FAILURE,"invaild to");
-		}else if(!strcmp(*cnt,"--minx")){
-			++cnt;
-		}else if(!strcmp(*cnt,"--maxx")){
-			++cnt;
-		}else if(!strcmp(*cnt,"--miny")){
-			++cnt;
-		}else if(!strcmp(*cnt,"--maxy")){
-			++cnt;
-		}else if(!strcmp(*cnt,"--radius")){
-			++cnt;
-		}else if(!strcmp(*cnt,"--gapx")){
-			++cnt;
-		}else if(!strcmp(*cnt,"--gapy")){
-			++cnt;
-		}else if(!strcmp(*cnt,"-f")&&cnt-argv<argc-3){
-			cnt+=2;
-		}else if(!strcmp(*cnt,"-x")){
-			xexpr=*(++cnt);
-		}else if(!strcmp(*cnt,"--step")){
-			if(sscanf(*(++cnt),"%lf",&step)<1)
-				errx(EXIT_FAILURE,"invaild step");
-		}else if(!strcmp(*cnt,"-o")){
-			++cnt;
-		}else if(!strcmp(*cnt,"--color")){
-			if(!memcmp(*(++cnt),"0x",2)){
-			if(sscanf(*cnt+2,"%x",&color)<1)
-				errx(EXIT_FAILURE,"invaild color");
-			}else {
-			if(sscanf(*cnt,"%u",&color)<1)
-				errx(EXIT_FAILURE,"invaild color");
-			}
-		}else {
-			gap=(to-from)/thread;
-			if(*xexpr&&**cnt)
-			drawat(xexpr,*cnt,"t");
-		}
-	}
+	if(argscan(argc-1,argv+1,1,ats,drawat)<0)
+		exit(EXIT_FAILURE);
 	//draw end
 	expr_symset_free(es);
 
 	free((void *)currents);
 	free(wbuf);
 	free(bar);
-	if(frombuf)free(frombuf);
+	if(frombuf)
+		free(frombuf);
 	writefile(file,graph_getbmp(&g),graph_bmpsize(&g));
+	return EXIT_SUCCESS;
 }
