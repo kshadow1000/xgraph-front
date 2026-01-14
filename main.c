@@ -300,7 +300,7 @@ int printhelp(void){
 }
 int main(int argc,char **argv){
 	int fromfd;
-	size_t fromsize;
+	size_t fromsize=0;
 	barlen=ioctl(STDERR_FILENO,TIOCGWINSZ,&wsize)>=0?wsize.ws_col-28:0;
 	init_expr_symset(es);
 	if(argc<2)
