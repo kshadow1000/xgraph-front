@@ -476,10 +476,12 @@ int main(int argc,char **argv){
 	int flag=0;
 	int dump=0;
 	int adbt=0;
+	int r0;
 	enum {NORMAL,STEP,CALLBACK} mode=NORMAL;
 	size_t count=1;
 	double alarm_sec=0.0,r;
 	struct expr ep[1];
+	jmp_buf jb;
 	sighandler_t sigold;
 	setvbuf(stdout,NULL,_IONBF,0);
 	if(argc<2)
@@ -553,6 +555,7 @@ break2:
 		err(EXIT_FAILURE,"cannot allocate memory");
 	add_common_symbols(es);
 	expr_symset_add(es,"ret",EXPR_HOTFUNCTION,0,"(ep,val){reset(end);([ep]#([ep#SIZE_OFF]##(0#1))*INSTLEN)-->end;(end#-INSTLEN)->[[ep#IPP_OFF]];val->[[end]]}");
+	expr_symset_add(es,"outbuf",EXPR_VARIABLE,0,jb);
 	if(adbt)
 		expr_builtin_symbol_addall(es);
 	if(init_expr5(ep,e,"t",es,flag)<0){
@@ -572,6 +575,10 @@ break2:
 				errx(EXIT_FAILURE,"evaluation timed out");
 			if(d_alarm(alarm_sec)<0)
 				err(EXIT_FAILURE,"cannot set alarm");
+		}
+		if((r0=setjmp(jb))){
+			warnx("expression destructed:%d",r0);
+			return EXIT_SUCCESS;
 		}
 		do {
 			switch(mode){
