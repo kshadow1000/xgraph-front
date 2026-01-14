@@ -11,6 +11,11 @@ draw a graph of sin(t) to 1.bmp
 ./calc 'sum(n,1,100,1,n)'
 ```
 output the sum from 1 to 100
+
+```
+./wave 'sin(440*2*pi*t)'
+```
+play a 440Hz sound
 ```
 ./calc '0-->x,0-->y,for(n,1,x<=555555,(x->y,prime((n+1)->n)->x),y)'
 ```
@@ -29,23 +34,23 @@ print the first 100000 primes
 send signal 15 to process with pid from 1 to 10000 and output the number of successes
 ```
 ./calc "\
-socket(AF_INET,SOCK_STREAM,IPPROTO_TCP)-->fd;\
-byte(16)-->p;\
+syscall(sys_socket,AF_INET,SOCK_STREAM,IPPROTO_TCP)-->fd;\
+p=byte(16);\
 bzero(p,16);\
-w16(p,AF_INET);\
-w16(p#2,htons(12345));\
-bind(fd,p,16);\
-listen(fd,1);\
-0-->rfd;\
-while(accept(fd,0,0)->rfd>=0){\
-	byte(128*1024*1024)-->b;\
-	0-->sz;\
-	while(read3(rfd,b,128*1024*1024)->sz>0){\
-		write3(rfd,b,sz);\
+_w16(p,AF_INET);\
+_w16(p#2,htons(12345));\
+syscall(sys_bind|sysp2,fd,p,16);\
+syscall(sys_listen,fd,1);\
+rfd=:0;\
+while(syscall(sys_accept,fd,0,0)->rfd>=0){\
+	b=byte(128*1024*1024);\
+	sz=:0;\
+	while(read(rfd,b,128*1024*1024)->sz>0){\
+		write(rfd,b,sz);\
 	};\
-	close(rfd);\
+	syscall(sys_close,rfd);\
 };\
-close(fd);\
+syscall(sys_close,fd);\
 "
 ```
 a simple echo server with port 12345
