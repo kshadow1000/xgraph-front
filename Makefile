@@ -41,6 +41,9 @@ xgraph/xgraph.a: xgraph
 .PHONY:
 systable:
 	bash systable.sh >systable.c
+redoall:
+	make cleanall
+	make
 .PHONY:
 redo:
 	make clean
