@@ -188,7 +188,6 @@ const struct inst_info ii[]={
 [EXPR_SJ]={.name="sj",.st=NUL,},
 [EXPR_LJ]={.name="lj",.st=MEM,},
 [EXPR_IP]={.name="ip",.st=ZVAL,},
-[EXPR_IPP]={.name="ipp",.st=NUL,},
 [EXPR_TO]={.name="to",.st=NUL,},
 [EXPR_TO1]={.name="to1",.st=NUL,},
 [EXPR_HMD]={.name="hmd",.st=HMD,},
