@@ -32,9 +32,11 @@ debugl: list.c xgraph/expr/expr.c common_symbols.c
 .PHONY:
 symtestl: symtest.c common_symbols.o xgraph/expr/expr.c
 	$(CC) $(CFLAG) symtest.c common_symbols.o -o symtest xgraph/expr/expr.c -g -fsanitize=address -lm
-symtest: symtest.c xgraph/expr/xgraph.a common_symbols.o
+.PHONY:
+symtest: symtest.c xgraph/xgraph.a common_symbols.o
 	$(CC) $(CFLAG) symtest.c common_symbols.o -o symtest $(LFLAG) -g
-sorttest: sorttest.c xgraph/expr/xgraph.a common_symbols.o
+.PHONY:
+sorttest: sorttest.c xgraph/xgraph.a common_symbols.o
 	$(CC) $(CFLAG) sorttest.c common_symbols.o -o sorttest $(LFLAG)
 xgraph/xgraph.a: xgraph
 	make -C xgraph

@@ -4,7 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
-#include "xgraph/header/expr.h"
+#include "xgraph/expr/expr.h"
 #include <time.h>
 #include <err.h>
 //#define printf(f,...) 1

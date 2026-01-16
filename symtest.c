@@ -4,7 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
-#include "xgraph/expr.h"
+#include "xgraph/expr/expr.h"
 #include <time.h>
 #include <err.h>
 #include <assert.h>
@@ -55,12 +55,14 @@ __attribute__((destructor)) void bufend(void){
 		free(buf);
 }
 void *alloc_hook(size_t sz){
+	sz=(sz+7UL)&~7UL;
 	void *r=p;
 	p+=sz;
 	assert(p<=buf+expr_allocate_max);
 	return r;
 }
 void free_hook(void *r){
+	return;
 	if(r==buf)
 		freed=1;
 	free(r);
@@ -68,7 +70,7 @@ void free_hook(void *r){
 struct expr_symbol *esp;
 char target[64]={"mustin"};
 void readmode(void){
-	ssize_t r;
+//	ssize_t r;
 //	r=read(STDIN_FILENO,buf,expr_allocate_max);
 //	fprintf(stderr,"read return %zd\n",expr_symset_read(es,buf,r));
 	fprintf(stderr,"read return %zd\n",expr_symset_readfd(es,(ssize_t (*)(intptr_t,void *,size_t))read,STDIN_FILENO));
@@ -95,7 +97,7 @@ int main(int argc,char **argv){
 	getrandom(&in,4,GRND_NONBLOCK);
 	srand48(in);
 	signal(SIGABRT,psig);
-//	expr_allocator=alloc_hook;
+	expr_allocator=alloc_hook;
 	expr_deallocator=free_hook;
 	for(i=1;suc<n;++i){
 		//sfprintf(stderr,buf,"x%zu",i);
@@ -114,7 +116,7 @@ int main(int argc,char **argv){
 			srand48(in);
 		}
 	//	if(es->size%8000000==7999999){
-			expr_symset_save(es,alloc_hook(es->alength));
+			//expr_symset_save(es,alloc_hook(es->alength));
 			//expr_symset_save(es,alloc_hook(es->alength));
 			//printf("saved\n");
 			//break;
@@ -148,8 +150,8 @@ nosearch:
 	/*
 	*/
 	expr_symset_correct(es);
-	expr_symset_save(es,alloc_hook(es->alength));
-	fprintf(stderr,"write return %zd\n",expr_symset_write(es,(ssize_t (*)(intptr_t,const void *,size_t))write,STDOUT_FILENO));
+//	expr_symset_save(es,alloc_hook(es->alength));
+//	fprintf(stderr,"write return %zd\n",expr_symset_write(es,(ssize_t (*)(intptr_t,const void *,size_t))write,STDOUT_FILENO));
 	for(int i=0;i<0;++i){
 		expr_symset_tryrecombine(es,in);
 		pes("before recombined");
