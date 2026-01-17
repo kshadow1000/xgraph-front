@@ -78,7 +78,7 @@ void readmode(void){
 		fprintf(stderr,"found %s=%zd\n",esp->str,(ssize_t)expr_symset_un(esp)->value):fputs("fail\n",stderr);
 
 }
-ssize_t getrandom(void* _Nonnull __buffer, size_t __buffer_size, unsigned int __flags);
+ssize_t getrandom(void* __buffer, size_t __buffer_size, unsigned int __flags);
 int main(int argc,char **argv){
 	char buf[32];
 	double st;
