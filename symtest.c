@@ -150,8 +150,8 @@ nosearch:
 	/*
 	*/
 	expr_symset_correct(es);
-//	expr_symset_save(es,alloc_hook(es->alength));
-//	fprintf(stderr,"write return %zd\n",expr_symset_write(es,(ssize_t (*)(intptr_t,const void *,size_t))write,STDOUT_FILENO));
+	//expr_symset_save(es,alloc_hook(es->alength));
+	//fprintf(stderr,"write return %zd\n",expr_symset_write(es,(ssize_t (*)(intptr_t,const void *,size_t))write,STDOUT_FILENO));
 	for(int i=0;i<0;++i){
 		expr_symset_tryrecombine(es,in);
 		pes("before recombined");
