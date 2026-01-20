@@ -25,6 +25,13 @@
 #include <sys/wait.h>
 #include <netinet/in.h>
 #include <syscall.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#define printval(x) warn(#x ":%lu",(unsigned long)(x))
+#define printvali(x) warn(#x ":%d",(int)(x))
+#define printvall(x) warn(#x ":%ld",(long)(x))
+#define printvald(x) warn(#x ":%lf",(double)(x))
+#define warn(fmt,...) fprintf(stderr,fmt "\n",##__VA_ARGS__)
 #define casting(x,T) ((T)(x))
 #define cast(x,T) expr_cast(x,T)
 /*_Generic(T,\
@@ -113,6 +120,26 @@ warpiipi(int,connect,int,struct sockaddr *,socklen_t)
 warpiipp(int,accept,int,struct sockaddr *,socklen_t *)
 double last_sig;
 struct expr *volatile sigep[64+1];
+const struct addrinfo ai_req_icmp[1]={{
+	.ai_family=AF_INET,
+	.ai_socktype=SOCK_DGRAM,
+	//.ai_protocol=IPPROTO_ICMP,
+}};
+static in_addr_t inet_addr2(const char *cp){
+	struct addrinfo *ai0,*ai;
+	int ret=INADDR_NONE;
+	if(getaddrinfo(cp,NULL,ai_req_icmp,&ai0)<0)
+		return INADDR_NONE;
+	for(ai=ai0;ai;ai=ai->ai_next){
+		if(ai->ai_addrlen!=16)
+			continue;
+		ret=((struct sockaddr_in *)ai->ai_addr)->sin_addr.s_addr;
+		break;
+	}
+	freeaddrinfo(ai0);
+	return ret;
+}
+in_addr_t inet_addr(const char *cp) __attribute__((alias("inet_addr2")));
 void d_setsig(int sig){
  	last_sig=(double)sig;
 }
@@ -503,6 +530,7 @@ void add_common_symbols(struct expr_symset *es){
 	setconst(GRND_NONBLOCK);
 	setconst(GRND_RANDOM);
 	setconst(GRND_INSECURE);
+	setconst(INADDR_NONE);
 	expr_symset_add(es,"pid",EXPR_CONSTANT,(double)getpid());
 	expr_symset_add(es,"ppid",EXPR_CONSTANT,(double)getppid());
 	expr_symset_add(es,"uid",EXPR_CONSTANT,(double)getuid());

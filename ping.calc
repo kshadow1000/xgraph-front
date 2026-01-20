@@ -1,0 +1,44 @@
+out=jmpbuf(1);
+ip(3)-->ep;
+setjmp(out)-->jmp_ret;
+if(jmp_ret){
+	return(ep,jmp_ret);
+};
+reset(close);
+close=(fd){syscall(sys_close,fd)};
+err=(val){longjmp(out,val)};
+errfd=(val){close(fd),longjmp(out,val)};
+if(argc<2){
+	err(-1025);
+};
+syscall(sys_socket,AF_INET,SOCK_DGRAM,IPPROTO_ICMP)-->fd;
+if(fd<0){err(fd)};
+inet_addr(argv[1])-->r;
+if(r==INADDR_NONE){
+	errfd(-1026);
+};
+dest=byte(16);
+_w16(dest,AF_INET);
+_w16(dest#2,0);
+_w32(dest#4,r);
+_w64(dest#8,0);
+if(syscall(sys_connect|sysp2,fd,dest,16)->r<0){
+	errfd(r);
+};
+icmp=byte(8);
+_w8(icmp,8);
+_w8(icmp#1,0);
+_w32(icmp#4,0);
+readbuf=byte(8);
+time()-->write_time;
+if(syscall(sys_write|sysp2,fd,icmp,8)->r<0){
+	errfd(r);
+};
+time()-->write_time1;
+syscall(sys_read|sysp2,fd,readbuf,8)->r;
+time()-->read_time;
+if(r<0){
+	errfd(r);
+};
+((write_time+write_time1)/2)->write_time;
+read_time-write_time;

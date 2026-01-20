@@ -14,6 +14,7 @@
 #include <err.h>
 #include <getopt.h>
 #include <errno.h>
+#include <fcntl.h>
 #define BUFSIZE 4096
 //dump
 #include <stdarg.h>
@@ -450,6 +451,7 @@ const struct option ops[]={
 	{"getchar",0,NULL,'g'},
 	{"add-builtin",0,NULL,'B'},
 	{"help",0,NULL,'h'},
+	{"file",1,NULL,'f'},
 	{NULL},
 };
 void show_help(const char *a0){
@@ -467,15 +469,16 @@ void show_help(const char *a0){
 			"\t--detach, -d\tdetach each symbol sets,use with -k to make symbols visible\n"
 			"\t--getchar, -g\tcall getchar() on each instructions if -s/-c is set\n"
 			"\t--add-builtin, -B\tadd builtin symbols to symset\n"
+			"\t--file, -f file\tread expression from file\n"
 			,a0);
 	exit(EXIT_SUCCESS);
 }
 int main(int argc,char **argv){
-	char *e;
+	char *e=NULL;
 	int flag=0;
 	int dump=0;
 	int adbt=0;
-	int r0;
+	int r0,fd;
 	enum {NORMAL,STEP,CALLBACK} mode=NORMAL;
 	size_t count=1;
 	double alarm_sec=0.0,r;
@@ -487,7 +490,7 @@ int main(int argc,char **argv){
 		errx(EXIT_FAILURE,"see --help");
 	opterr=1;
 	for(;;){
-		switch(getopt_long(argc,argv,"pnDt::NisckdgB",ops,NULL)){
+		switch(getopt_long(argc,argv,"pnDt::NisckdgBf:",ops,NULL)){
 			case 'p':
 				flag|=EXPR_IF_PROTECT;
 				break;
@@ -530,6 +533,17 @@ int main(int argc,char **argv){
 			case 'h':
 				show_help(*argv);
 				break;
+			case 'f':
+				fd=open(optarg,O_RDONLY);
+				if(fd<0)
+					err(EXIT_FAILURE,"cannot open file");
+				rbuf=readall(fd,NULL);
+				close(fd);
+				if(!rbuf)
+					err(EXIT_FAILURE,"cannot read");
+				e=rbuf;
+				--optind;
+				goto break3;
 			case -1:
 				goto break2;
 			case '?':
@@ -539,15 +553,17 @@ int main(int argc,char **argv){
 	}
 break2:
 	if(optind>=argc){
-		err(EXIT_FAILURE,"expression not found");
+		errx(EXIT_FAILURE,"expression not found");
 	}
-	e=argv[optind];
+	if(!e)
+		e=argv[optind];
 	if(!strcmp(e,"-")){
 		rbuf=readall(STDIN_FILENO,NULL);
 		if(!rbuf)
-			err(EXIT_FAILURE,"cannot read expression frm stdin");
+			err(EXIT_FAILURE,"cannot read expression from stdin");
 		e=rbuf;
 	}
+break3:
 	srand48(getpid()^time(NULL));
 	es=new_expr_symset();
 	if(!es)
@@ -555,6 +571,9 @@ break2:
 	add_common_symbols(es);
 	expr_symset_add(es,"ret",EXPR_HOTFUNCTION,0,"(ep,val){reset(end);([ep]#([ep#SIZE_OFF]##(0#1))*INSTLEN)-->end;(end#-INSTLEN)->[[ep#IPP_OFF]];val->[[end]]}");
 	expr_symset_add(es,"outbuf",EXPR_VARIABLE,0,jb);
+	//printf("argc=%d,optind=%d(%s)\n",argc,optind,argv[optind]);
+	expr_symset_add(es,"argc",EXPR_CONSTANT,0,(double)(argc-optind));
+	expr_symset_add(es,"argv",EXPR_CONSTANT,0,expr_cast(argv+optind,double));
 	if(adbt)
 		expr_builtin_symbol_addall(es);
 	if(init_expr5(ep,e,"t",es,flag)<0){

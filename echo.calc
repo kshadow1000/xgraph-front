@@ -1,17 +1,32 @@
-socket(AF_INET,SOCK_STREAM,IPPROTO_TCP)-->fd;
-const(p,byte(16));
-bzero(p,16);
-w16(p,AF_INET);
-w16(p#2,htons(12345));
-bind(fd,p,16);
-listen(fd,1);
-0-->rfd;
-while(accept(fd,0,0)->rfd>=0){
-	const(b,byte(8*1024*1024));
-	sz=:0;
-	while(read(rfd,b,8*1024*1024)->sz>0){
-		write(rfd,b,sz);
+hot(assert,(x,val){
+	if(!x){
+		return(ep,val);
 	};
-	close(rfd);
+});
+PORT=12345;
+BUFSIZE=(128*1024*1024);
+ip(3)-->ep;
+syscall(sys_socket,AF_INET,SOCK_STREAM,IPPROTO_TCP)-->fd;
+assert(fd>=0,fd);
+p=byte(16);
+_w16(p,AF_INET);
+_w16(p#2,htons(PORT));
+bzero(p#4,12);
+r=:0;
+syscall(sys_bind|sysp2,fd,p,16)->r;
+assert(r>=0,r);
+syscall(sys_listen,fd,1)->r;
+assert(r>=0,r);
+rfd=:0;
+0-->total;
+while(syscall(sys_accept4,fd)->rfd>=0){
+	b=byte(BUFSIZE);
+	sz=:0;
+	while(syscall(sys_read|sysp2,rfd,b,BUFSIZE)->sz>0){
+		syscall(sys_write|sysp2,rfd,b,sz)-->write_ret;
+		if(write_ret>0){(total+write_ret)->total};
+	};
+	syscall(sys_close,rfd);
 };
-close(fd);
+syscall(sys_close,fd);
+total
