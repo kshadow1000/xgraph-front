@@ -146,12 +146,12 @@ void list_symbol(struct expr_symbol *p){
 		case EXPR_VARIABLE:
 		case EXPR_FUNCTION:
 		case EXPR_ZAFUNCTION:
-			psymbol(p->type,p->flag,0,p->str,expr_symset_un(p));
+			psymbol(p->type,p->flag,0,p->str,expr_symbol_un(p));
 			break;
 		case EXPR_MDFUNCTION:
 		case EXPR_MDEPFUNCTION:
-			dim=*(size_t *)(p->str+strlen(p->str)+1);
-			psymbol(p->type,p->flag,dim,p->str,expr_symset_un(p));
+			dim=*expr_symbol_dim(p);
+			psymbol(p->type,p->flag,dim,p->str,expr_symbol_un(p));
 			break;
 		default:
 			abort();
@@ -164,7 +164,7 @@ void list_common(void){
 	struct expr_symset es[1]={EXPR_SYMSET_INITIALIZER};
 	add_common_symbols(es);
 	if(adbt)
-		expr_builtin_symbol_addall(es);
+		expr_builtin_symbol_addall(es,expr_symbols);
 //	expr_symset_callback(es,list_symbol,NULL);
 //	expr_symset_callbacks(es,list_symbol1);
 	expr_symset_foreach4(sp,es,alloca(es->depth*EXPR_SYMSET_DEPTHUNIT),EXPR_SYMNEXT){

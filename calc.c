@@ -67,7 +67,6 @@ int xprintf(const char *fmt,...){
 int addr2sym(const struct expr *restrict ep,const struct expr_symset *restrict esp,char buf[EXPR_SYMLEN],void *addr){
 	union {
 		const struct expr_symbol *es;
-		const struct expr_builtin_symbol *ebs;
 	} sym;
 	if(!addr)return -1;
 	if(addr==EXPR_VOID||addr==EXPR_VOID_NR){
@@ -78,11 +77,6 @@ int addr2sym(const struct expr *restrict ep,const struct expr_symset *restrict e
 	if(ep->sset)sym.es=expr_symset_rsearch(esp,addr);
 	if(sym.es){
 		strcpy(buf,sym.es->str);
-		return 0;
-	}
-	sym.ebs=expr_builtin_symbol_rsearch(addr);
-	if(sym.ebs){
-		strcpy(buf,sym.ebs->str);
 		return 0;
 	}
 	return -1;
@@ -212,17 +206,12 @@ ssize_t varindex(const struct expr *restrict ep,double *v){
 const char *symbolof(const struct expr *restrict ep,void *addr){
 	union {
 		const struct expr_symbol *es;
-		const struct expr_builtin_symbol *ebs;
 	} sym;
 	sym.es=NULL;
 	if(ep->sset)
 		sym.es=expr_symset_rsearch(ep->sset,addr);
 	if(sym.es){
 		return sym.es->str;
-	}
-	sym.ebs=expr_builtin_symbol_rsearch(addr);
-	if(sym.ebs){
-		return sym.ebs->str;
 	}
 	return NULL;
 }
@@ -478,6 +467,7 @@ int main(int argc,char **argv){
 	int flag=0;
 	int dump=0;
 	int adbt=0;
+	int nobt=0;
 	int r0,fd;
 	enum {NORMAL,STEP,CALLBACK} mode=NORMAL;
 	size_t count=1;
@@ -498,7 +488,7 @@ int main(int argc,char **argv){
 				flag|=EXPR_IF_NOOPTIMIZE;
 				break;
 			case 'N':
-				flag|=EXPR_IF_NOBUILTIN;
+				nobt=1;
 				break;
 			case 'i':
 				flag|=EXPR_IF_INJECTION;
@@ -570,12 +560,13 @@ break3:
 		err(EXIT_FAILURE,"cannot allocate memory");
 	add_common_symbols(es);
 	expr_symset_add(es,"ret",EXPR_HOTFUNCTION,0,"(ep,val){reset(end);([ep]#([ep#SIZE_OFF]##(0#1))*INSTLEN)-->end;(end#-INSTLEN)->[[ep#IPP_OFF]];val->[[end]]}");
+	expr_symset_add(es,"destructor",EXPR_HOTFUNCTION,0,"(val){destruct(&#,&longjmp_out,&outbuf,val)}");
 	expr_symset_add(es,"outbuf",EXPR_VARIABLE,0,jb);
 	//printf("argc=%d,optind=%d(%s)\n",argc,optind,argv[optind]);
 	expr_symset_add(es,"argc",EXPR_CONSTANT,0,(double)(argc-optind));
 	expr_symset_add(es,"argv",EXPR_CONSTANT,0,expr_cast(argv+optind,double));
-	if(adbt)
-		expr_builtin_symbol_addall(es);
+	if(adbt||!nobt)
+		expr_builtin_symbol_addall(es,expr_symbols);
 	if(init_expr5(ep,e,"t",es,flag)<0){
 		if(*ep->errinfo)
 			errx(EXIT_FAILURE,"expression error:%s \"%s\"",expr_error(ep->error),ep->errinfo);
