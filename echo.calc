@@ -1,8 +1,10 @@
-hot(assert,(x,val){
+#! calc -f
+reset(assert);
+assert=(x,val){
 	if(!x){
 		return(ep,val);
 	};
-});
+};
 PORT=12345;
 BUFSIZE=(128*1024*1024);
 ip(3)-->ep;

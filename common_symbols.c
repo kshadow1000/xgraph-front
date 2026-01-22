@@ -127,14 +127,15 @@ const struct addrinfo ai_req_icmp[1]={{
 }};
 static in_addr_t inet_addr2(const char *cp){
 	struct addrinfo *ai0,*ai;
-	int ret=INADDR_NONE;
+	in_addr_t ret=INADDR_NONE;
 	if(getaddrinfo(cp,NULL,ai_req_icmp,&ai0)<0)
 		return INADDR_NONE;
 	for(ai=ai0;ai;ai=ai->ai_next){
-		if(ai->ai_addrlen!=16)
-			continue;
+		//if(ai->ai_addrlen!=16)
+		//	continue;
 		ret=((struct sockaddr_in *)ai->ai_addr)->sin_addr.s_addr;
-		break;
+		//if(ret!=INADDR_NONE)
+		//	break;
 	}
 	freeaddrinfo(ai0);
 	return ret;
@@ -248,17 +249,8 @@ double d_read(double *args,size_t n){
 #pragma GCC diagnostic ignored "-Wformat"
 double d_printf(double *args,size_t n){
 	const char *fmt=cast(*args,const char *);
-	switch(n){
-		case 1:return (double)printf(fmt);
-		case 2:return (double)printf(fmt,args[1]);
-		case 3:return (double)printf(fmt,args[1],args[2]);
-		case 4:return (double)printf(fmt,args[1],args[2],args[3]);
-		case 5:return (double)printf(fmt,args[1],args[2],args[3],args[4]);
-		case 6:return (double)printf(fmt,args[1],args[2],args[3],args[4],args[5]);
-		case 7:return (double)printf(fmt,args[1],args[2],args[3],args[4],args[5],args[6]);
-		case 8:return (double)printf(fmt,args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
-		default:return (double)printf("Too many args!");
-	}
+	size_t flen=strlen(fmt);
+	return (double)expr_writef(fmt,flen,(ssize_t (*)(intptr_t,const void *,size_t))write,STDOUT_FILENO,(void **)args+1,n-1);
 }
 double d_printk(double *args,size_t n){
 	const char *fmt=cast(*args,const char *);
@@ -376,6 +368,9 @@ double d_frya(double *args,size_t n){
 double d_fprinta(double *args,size_t n){
 	return (double)fprintda((int)args[0],args+1,n-1);
 }
+double geterrno(void){
+	return cast(&errno,double);
+}
 volatile double vx[8];
 void add_common_symbols(struct expr_symset *es){
 	char buf[32];
@@ -390,6 +385,7 @@ void add_common_symbols(struct expr_symset *es){
 #define setza(c) expr_symset_add(es,#c,EXPR_ZAFUNCTION,0,d_##c)
 #define setzau(c) expr_symset_add(es,#c,EXPR_ZAFUNCTION,EXPR_SF_UNSAFE,d_##c)
 	expr_symset_add(es,"time",EXPR_ZAFUNCTION,0,dtime);
+	expr_symset_add(es,"geterrno",EXPR_ZAFUNCTION,0,geterrno);
 	setza(getpid);
 	setza(getppid);
 	setza(gettid);
