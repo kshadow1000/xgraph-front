@@ -330,7 +330,7 @@ void *readall(int fd,ssize_t *len){
 static int x=0;
 void printdouble(double val){
 	char *buf,*p;
-	asprintf(&buf,x?"%.1024la":"%.1024lf",val);
+	asprintf(&buf,x?"%.4096la":"%.4096lf",val);
 	p=strchr(buf,'.');
 	if(p){
 		p+=strlen(p);
