@@ -362,9 +362,9 @@ void setexpr(struct expr **p,const char *c){
 }
 extern double sample_freq_d;
 __attribute__((constructor)) void atstart(void){
-	es=new_expr_symset();
+	es=expr_builtin_symbol_convert(expr_symbols);
 	if(!es)
-		err(EXIT_FAILURE,"new_expr_symset");
+		err(EXIT_FAILURE,"expr_builtin_symbol_convert");
 	if(!expr_symset_add(es,"y",EXPR_VARIABLE,0,&vf))
 		err(EXIT_FAILURE,"expr_symset_add");
 	if(!expr_symset_add(es,"sample",EXPR_VARIABLE,0,&sample_freq_d))
