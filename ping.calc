@@ -51,7 +51,7 @@ alias(do_echo,(
 while(n<4){
 	do_echo->r;
 	(sum+r)->sum;
-	printf("%u-th %ums\n",n,ceil(r*1000));
+	printf("%u-th %ums\n",0#n,0#ceil(r*1000));
 	(n+1)->n;
 	_w16(icmp#6,n);
 };

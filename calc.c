@@ -187,6 +187,7 @@ const struct inst_info ii[]={
 [EXPR_TO1]={.name="to1",.st=NUL,},
 [EXPR_HMD]={.name="hmd",.st=HMD,},
 [EXPR_RET]={.name="ret",.st=MEM,},
+[EXPR_SVC]={.name="svc",.st=MEM,},
 [EXPR_END]={.name="end",.st=NUL,},
 };
 const char *adst(const double *dst){
@@ -291,41 +292,14 @@ void list(const struct expr *restrict ep,const struct expr_symset *restrict esp)
 }
 //
 void *readall(int fd,ssize_t *len){
-	char *buf,*p;
-	size_t bufsiz,r1;
-	ssize_t r,ret=0;
-	bufsiz=BUFSIZE;
-	if((buf=malloc(BUFSIZE))==NULL){
-		if(len)
-			*len=-1;
+	char *save;
+	ssize_t r=expr_file_readfd((void *)read,fd,1,&save);
+	if(r<0)
 		return NULL;
-	}
-	r1=0;
-	while((r=read(fd,buf+ret,BUFSIZE-r1))>0){
-		r1+=r;
-		ret+=r;
-		if(ret==bufsiz){
-			bufsiz+=BUFSIZE;
-			if((p=realloc(buf,bufsiz))==NULL){
-				free(buf);
-				return NULL;
-			}
-			buf=p;
-			r1=0;
-		}else
-			break;
-	}
-	if(ret==bufsiz){
-		if((p=realloc(buf,bufsiz+1))==NULL){
-			free(buf);
-			return NULL;
-		}
-	buf=p;
-	}
-	buf[ret]=0;
 	if(len)
-		*len=ret;
-	return buf;
+		*len=r;
+	save[r]=0;
+	return save;
 }
 static int x=0;
 void printdouble(double val){
@@ -387,7 +361,9 @@ size_t pop(void){
 	return *(--ssp);
 }
 int gchr=0;
-#define stop(...) if(gchr)getchar()
+static int stop(void){
+	return gchr?getchar():0;
+}
 void callee(const struct expr *ep,struct expr_inst *ip,void *arg){
 	static char abuf[128];
 	sprintf(abuf,"%zu:expr[%zu]->data[%td]",line++,indexof(ep),ip-ep->data);

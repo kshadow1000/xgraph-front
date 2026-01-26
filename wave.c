@@ -51,39 +51,7 @@ void *xmalloc(size_t size){
 	return r;
 }
 ssize_t readall(int fd,void *bufp){
-	char *buf,*p;
-	size_t bufsiz,r1;
-	ssize_t r,ret=0;
-	static const size_t ra_bufsize=4096;
-	int i;
-	bufsiz=ra_bufsize;
-	if((buf=malloc(ra_bufsize))==NULL)return -errno;
-	r1=0;
-	while((r=read(fd,buf+ret,ra_bufsize-r1))>0){
-		r1+=r;
-		ret+=r;
-		if(ret==bufsiz){
-			bufsiz+=ra_bufsize;
-			if((p=realloc(buf,bufsiz))==NULL){
-				i=errno;
-				free(buf);
-				return -i;
-			}
-			buf=p;
-			r1=0;
-		}
-	}
-	if(ret==bufsiz){
-	if((p=realloc(buf,bufsiz+1))==NULL){
-		i=errno;
-		free(buf);
-		return -i;
-	}
-	buf=p;
-	}
-	buf[ret]=0;
-	*(void **)bufp=buf;
-	return ret;
+	return expr_file_readfd((void *)read,fd,0,bufp);
 }
 int ff_output=0,quiet=0;
 #define out(fmt,...) ((ff_output||quiet)?0:fprintf(stderr,(fmt),__VA_ARGS__))
