@@ -102,8 +102,8 @@ __attribute__((destructor)) void _ps##atend(void){\
 idex(eps,indexof);
 idex(ps,indexofp);
 idex(ups,indexofu);
-enum odtype{NUL,MEM,SUM,BRANCH,HOT,MD,VMD,HMD,VAL,ZVAL};
-char subexpr[]={[NUL]=0,[MEM]=0,[SUM]=1,[BRANCH]=1,[HOT]=1,[MD]=1,[VMD]=1,[HMD]=1,[VAL]=0,[ZVAL]=0,};
+enum odtype {NUL,MEM,SUM,BRANCH,HOT,MD,VMD,HMD,VAL,ZVAL,MEMF,FLAG};
+char subexpr[]={[NUL]=0,[MEM]=0,[SUM]=1,[BRANCH]=1,[HOT]=1,[MD]=1,[VMD]=1,[HMD]=1,[VAL]=0,[ZVAL]=0,[MEMF]=0,[FLAG]=0,};
 #define hassubexpr(_op) subexpr[ii[_op].st]
 struct inst_info {
 	const char *name;
@@ -144,6 +144,8 @@ const struct inst_info ii[]={
 [EXPR_NOT]={.name="not",.st=NUL,},
 [EXPR_NOTL]={.name="notl",.st=NUL,},
 [EXPR_TSTL]={.name="tstl",.st=NUL,},
+[EXPR_NEX0]={.name="nex0",.st=NUL,},
+[EXPR_DIF0]={.name="dif0",.st=NUL,},
 [EXPR_IF]={.name="if",.st=BRANCH,},
 [EXPR_WHILE]={.name="while",.st=BRANCH,},
 [EXPR_DO]={.name="do",.st=HOT,},
@@ -187,7 +189,8 @@ const struct inst_info ii[]={
 [EXPR_TO1]={.name="to1",.st=NUL,},
 [EXPR_HMD]={.name="hmd",.st=HMD,},
 [EXPR_RET]={.name="ret",.st=MEM,},
-[EXPR_SVC]={.name="svc",.st=MEM,},
+[EXPR_SVC]={.name="svc",.st=FLAG,},
+[EXPR_SVCP]={.name="svcp",.st=MEMF,},
 [EXPR_END]={.name="end",.st=NUL,},
 };
 const char *adst(const double *dst){
@@ -234,6 +237,10 @@ const char *od(const struct expr *restrict ep,void *addr){
 		sprintf(abuf,"[%zd]",index);
 		return abuf;
 	}
+	if((double *)addr>=ep->args&&(double *)addr<ep->args+EXPR_SYSAM){
+		sprintf(abuf,"r[%zd]",(double *)addr-ep->args);
+		return abuf;
+	}
 	sprintf(abuf,"u[%zd]",indexofu(addr));
 	return abuf;
 }
@@ -246,6 +253,12 @@ const char *ainst(const struct expr *restrict ep,struct expr_inst *ip){
 			break;
 		case MEM:
 			sprintf(abuf+r," %-5s=%.3lg",od(ep,ip->un.uaddr),*ip->un.src);
+			break;
+		case MEMF:
+			sprintf(abuf+r," %-5s %-2d",od(ep,ip->un.uaddr),ip->flag);
+			break;
+		case FLAG:
+			sprintf(abuf+r," %-2d",ip->flag);
 			break;
 		case SUM:
 			sprintf(abuf+r," sum[%zu,%zu,%zu,%zu]",indexof(ip->un.es->fromep),indexof(ip->un.es->toep),indexof(ip->un.es->stepep),indexof(ip->un.es->ep));
@@ -304,7 +317,7 @@ void *readall(int fd,ssize_t *len){
 static int x=0;
 void printdouble(double val){
 	char *buf,*p;
-	asprintf(&buf,x?"%.4096la":"%.4096lf",val);
+	asprintf(&buf,x?"%.4096lA":"%.4096lf",val);
 	p=strchr(buf,'.');
 	if(p){
 		p+=strlen(p);
@@ -541,8 +554,11 @@ break3:
 	//printf("argc=%d,optind=%d(%s)\n",argc,optind,argv[optind]);
 	expr_symset_add(es,"argc",EXPR_CONSTANT,0,(double)(argc-optind));
 	expr_symset_add(es,"argv",EXPR_CONSTANT,0,expr_cast(argv+optind,double));
+	expr_symset_add(es,"table_default",EXPR_CONSTANT,0,expr_cast((void *)expr_writefmts_table_default,double));
 	if(adbt||!nobt)
 		expr_builtin_symbol_addall(es,expr_symbols);
+//	for(int i=0;i<999999;++i)
+//		init_expr5(ep,e,"t",es,flag|EXPR_IF_INSTANT_FREE);
 	if(init_expr5(ep,e,"t",es,flag)<0){
 		if(*ep->errinfo)
 			errx(EXIT_FAILURE,"expression error:%s \"%s\"",expr_error(ep->error),ep->errinfo);

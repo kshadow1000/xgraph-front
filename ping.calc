@@ -2,7 +2,7 @@
 static_if(argc<2){
 	error("./ping.calc destination");
 };
-out=jmpbuf(1);
+out=byte(jmpbuf);
 ip(3)-->ep;
 setjmp(out)-->jmp_ret;
 if(jmp_ret){
