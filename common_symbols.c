@@ -27,6 +27,11 @@
 #include <syscall.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+static const char *sysnames[]={
+#define register_syscall(sysid) [__NR_##sysid]=#sysid,
+#include "systable.c"
+#undef register_syscall
+};
 #define printval(x) warn(#x ":%lu",(unsigned long)(x))
 #define printvali(x) warn(#x ":%d",(int)(x))
 #define printvall(x) warn(#x ":%ld",(long)(x))
@@ -531,6 +536,16 @@ void add_common_symbols(struct expr_symset *es){
 	expr_symset_add(es,"ppid",EXPR_CONSTANT,(double)getppid());
 	expr_symset_add(es,"uid",EXPR_CONSTANT,(double)getuid());
 	expr_symset_add(es,"gid",EXPR_CONSTANT,(double)getgid());
-#define register_syscall(sysid) expr_symset_add(es,"sys_" #sysid,EXPR_CONSTANT,0,(double)(__NR_##sysid))
+#define register_syscall(sysid) expr_symset_add(es,"sys_" #sysid,EXPR_CONSTANT,0,(double)(__NR_##sysid));
 #include "systable.c"
+#undef register_syscall
+}
+const char *sysname(unsigned int id){
+	const char *r;
+	if(id>=sizeof(sysnames)/sizeof(*sysnames))
+		return "unknown";
+	r=sysnames[id];
+	if(!r)
+		return "unknown";
+	return r;
 }

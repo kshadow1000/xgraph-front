@@ -21,6 +21,8 @@
 #define PREFIX_SIZE 128
 #define likely(cond) __builtin_expect(!!(cond),1)
 #define unlikely(cond) __builtin_expect(!!(cond),0)
+#define printf(fmt,...) dprintf(STDOUT_FILENO,fmt,##__VA_ARGS__)
+const char *sysname(unsigned int id);
 static void *xmalloc(size_t size){
 	void *r;
 	r=malloc(size);
@@ -190,7 +192,9 @@ const struct inst_info ii[]={
 [EXPR_HMD]={.name="hmd",.st=HMD,},
 [EXPR_RET]={.name="ret",.st=MEM,},
 [EXPR_SVC]={.name="svc",.st=FLAG,},
+[EXPR_SVC0]={.name="svc0",.st=FLAG,},
 [EXPR_SVCP]={.name="svcp",.st=MEMF,},
+[EXPR_SVCP0]={.name="svcp0",.st=MEMF,},
 [EXPR_END]={.name="end",.st=NUL,},
 };
 const char *adst(const double *dst){
@@ -255,10 +259,10 @@ const char *ainst(const struct expr *restrict ep,struct expr_inst *ip){
 			sprintf(abuf+r," %-5s=%.3lg",od(ep,ip->un.uaddr),*ip->un.src);
 			break;
 		case MEMF:
-			sprintf(abuf+r," %-5s %-2d",od(ep,ip->un.uaddr),ip->flag);
+			sprintf(abuf+r," %-5s %s(%d)",od(ep,ip->un.uaddr),sysname((unsigned int)*ip->dst.dst),ip->flag);
 			break;
 		case FLAG:
-			sprintf(abuf+r," %-2d",ip->flag);
+			sprintf(abuf+r," %s(%d)",sysname((unsigned int)*ip->dst.dst),ip->flag);
 			break;
 		case SUM:
 			sprintf(abuf+r," sum[%zu,%zu,%zu,%zu]",indexof(ip->un.es->fromep),indexof(ip->un.es->toep),indexof(ip->un.es->stepep),indexof(ip->un.es->ep));
