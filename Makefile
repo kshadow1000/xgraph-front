@@ -16,7 +16,7 @@ common_symbols.o: common_symbols.c
 	$(CC) $(CFLAG) common_symbols.c -c -o common_symbols.o
 .PHONY:
 leak: calc.c xgraph/expr/expr.c common_symbols.c
-	$(CC) -Wall -fsanitize=address leak.c -g -g calc.c common_symbols.c -o calc xgraph/expr/expr.c -lm
+	$(CC) -Wall -fsanitize=address leak.c -g calc.c common_symbols.c -o calc xgraph/expr/expr.c -lm
 .PHONY:
 leakw: wave.c xgraph/expr/expr.c common_symbols.c
 	$(CC) -Wall -fsanitize=address leak.c -g wave.c -o wave xgraph/expr/expr.c -lm

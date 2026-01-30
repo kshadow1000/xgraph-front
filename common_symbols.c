@@ -250,6 +250,7 @@ double d_read(double *args,size_t n){
 	size=(size_t)*(++args);
 	return read(fd,un.buf,size);
 }
+extern int lactive;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat"
 double d_printf(double *args,size_t n){
@@ -257,6 +258,15 @@ double d_printf(double *args,size_t n){
 	size_t flen=strlen(fmt);
 	struct expr_buffered_file f;
 	ssize_t r,r1;
+	char *s;
+//	lactive=1;
+	r=expr_asprintf(&s,fmt,flen,(void **)args+1,n-1);
+	if(r<0)
+		return -r;
+	r=write(STDOUT_FILENO,s,r);
+	expr_deallocator(s);
+//	lactive=0;
+	return (double)r;
 	f.writer=(ssize_t (*)(intptr_t,const void *,size_t))write;
 	f.fd=STDOUT_FILENO;
 	f.buf=NULL;
@@ -302,29 +312,6 @@ err:
 	return -1.0;
 }
 #pragma GCC diagnostic pop
-/*double d_inet_addr(double *args,size_t n){
-	switch(n){
-		case 1:
-			return (double)(uint32_t)*args;
-		case 2:
-			return (double)((uint32_t)args[0]+
-				       ((uint32_t)args[1]<<16)
-				       );
-		case 3:
-			return (double)((uint32_t)args[0]+
-				       ((uint32_t)args[1]<<8)+
-				       ((uint32_t)args[2]<<16)
-				       );
-		case 4:
-			return (double)((uint32_t)args[0]+
-				       ((uint32_t)args[1]<<8)+
-				       ((uint32_t)args[2]<<16)+
-				       ((uint32_t)args[3]<<24)
-				       );
-		default:
-			return -1.0;
-	}
-}*/
 int isprime(unsigned long n){
 	if(n==2)return 1;
 	if(!(n&1))return 0;
