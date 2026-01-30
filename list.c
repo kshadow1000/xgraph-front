@@ -13,25 +13,12 @@
 #include <string.h>
 #include <assert.h>
 #include <alloca.h>
-#define psize(s) printf("sizeof(" #s ")=%zu\n",sizeof(s))
-const char *t2s[]={
-	[EXPR_CONSTANT]="Constant",
-	[EXPR_VARIABLE]="Variable",
-	[EXPR_FUNCTION]="Function",
-	[EXPR_MDFUNCTION]="Multi-dimension function",
-	[EXPR_MDEPFUNCTION]="Multi-dimension function*",
-	[EXPR_HOTFUNCTION]="Hot function",
-	[EXPR_ZAFUNCTION]="Zero-argument function"
-};
-void add_common_symbols(struct expr_symset *);
-#define likely(cond) __builtin_expect(!!(cond),1)
-#define unlikely(cond) __builtin_expect(!!(cond),0)
 int allocated=0;
 int freed=0;
 static void *xmalloc(size_t size){
 	void *r;
 	r=malloc(size);
-	if(unlikely(!r)){
+	if(expr_unlikely(!r)){
 		warn("IN xmalloc(size=%zu)\n"
 			"CANNOT ALLOCATE MEMORY",size);
 		warnx("ABORTING");
@@ -43,7 +30,7 @@ static void *xmalloc(size_t size){
 static void *xrealloc(void *old,size_t size){
 	void *r;
 	r=realloc(old,size);
-	if(unlikely(!r)){
+	if(expr_unlikely(!r)){
 		warn("IN xrealloc(old=%p,size=%zu)\n"
 			"CANNOT REALLOCATE MEMORY",old,size);
 		warnx("ABORTING");
@@ -55,6 +42,17 @@ void free_hook(void *p){
 	free(p);
 	++freed;
 }
+#define psize(s) printf("sizeof(" #s ")=%zu\n",sizeof(s))
+const char *t2s[]={
+	[EXPR_CONSTANT]="Constant",
+	[EXPR_VARIABLE]="Variable",
+	[EXPR_FUNCTION]="Function",
+	[EXPR_MDFUNCTION]="Multi-dimension function",
+	[EXPR_MDEPFUNCTION]="Multi-dimension function*",
+	[EXPR_HOTFUNCTION]="Hot function",
+	[EXPR_ZAFUNCTION]="Zero-argument function"
+};
+void add_common_symbols(struct expr_symset *);
 const char *aflag(int type,int flag,size_t dim){
 	static char abuf[64];
 	static char abuf1[64];

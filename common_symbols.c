@@ -255,7 +255,23 @@ double d_read(double *args,size_t n){
 double d_printf(double *args,size_t n){
 	const char *fmt=cast(*args,const char *);
 	size_t flen=strlen(fmt);
-	return (double)expr_writef(fmt,flen,(ssize_t (*)(intptr_t,const void *,size_t))write,STDOUT_FILENO,(void **)args+1,n-1);
+	struct expr_buffered_file f;
+	ssize_t r,r1;
+	f.writer=(ssize_t (*)(intptr_t,const void *,size_t))write;
+	f.fd=STDOUT_FILENO;
+	f.buf=NULL;
+	f.index=0;
+	f.dynamic=13;
+	f.length=0;
+	r=expr_writef(fmt,flen,(void *)expr_buffered_write,(intptr_t)&f,(void **)args+1,n-1);
+	if(r>=0){
+		r1=expr_buffered_close(&f);
+		if(r1<0)
+			r=r1;
+		else
+			r+=r1;
+	}
+	return (double)r;
 }
 double d_printk(double *args,size_t n){
 	const char *fmt=cast(*args,const char *);

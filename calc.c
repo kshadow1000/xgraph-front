@@ -45,11 +45,11 @@ static void *xrealloc(void *old,size_t size){
 	}
 	return r;
 }
-char prefix[PREFIX_SIZE]={[0 ... (PREFIX_SIZE-1)]='-'};
+char prefix[PREFIX_SIZE]={[0 ... (PREFIX_SIZE-1)]=' '};
 unsigned long level=0;
 void writeprefix(void){
 	unsigned long n;
-	n=level;
+	n=level*4;
 	while(n>=PREFIX_SIZE){
 		fwrite(prefix,1,PREFIX_SIZE,stdout);
 		n-=PREFIX_SIZE;
@@ -287,7 +287,7 @@ const char *ainst(const struct expr *restrict ep,struct expr_inst *ip){
 			sprintf(abuf+r," expr[%zu]",indexof(ip->un.hotfunc));
 			break;
 		case VAL:
-			sprintf(abuf+r," %lg",ip->un.value);
+			sprintf(abuf+r," %lg",*ip->dst.dst=ip->un.value);
 			break;
 		case ZVAL:
 			sprintf(abuf+r," %zu",ip->un.zu);
@@ -300,79 +300,83 @@ const char *ainst(const struct expr *restrict ep,struct expr_inst *ip){
 }
 size_t line=0;
 void list(const struct expr *restrict ep,const struct expr_symset *restrict esp){
-//	char ssrc[EXPR_SYMLEN],sdst[EXPR_SYMLEN],ssym[EXPR_SYMLEN];
-//	const char *sop=NULL;
-//	ssize_t index;
+	size_t d;
 #define list1(x) list((x),ep->sset)
-	xprintf("%zu instructions %zu vars in total\n",ep->size,ep->vsize);
+	printf("={\n");
+	//xprintf("[%zu],[%zu]{\n",ep->size,ep->vsize);
+	++level;
 	for(struct expr_inst *ip=ep->data;ip-ep->data<ep->size;++ip){
+	xprintf("%zu:[%zu]->[%zd] %s\n",line++,indexof(ep),ip-ep->data,ainst(ep,ip));
 	switch(ii[ip->op].st){
 		case SUM:
-			xprintf("sum=\n");
-			level+=4;
-			xprintf(">from=expr[%zu]\n",indexof(ip->un.es->fromep));
+			++level;
+			//xprintf("sum=\n");
+			xprintf("->from=expr[%zu]",indexof(ip->un.es->fromep));
 			list1(ip->un.es->fromep);
-			xprintf(">to=expr[%zu]\n",indexof(ip->un.es->toep));
+			xprintf("->to=expr[%zu]",indexof(ip->un.es->toep));
 			list1(ip->un.es->toep);
-			xprintf(">step=expr[%zu]\n",indexof(ip->un.es->stepep));
+			xprintf("->step=expr[%zu]",indexof(ip->un.es->stepep));
 			list1(ip->un.es->stepep);
-			xprintf(">ep=expr[%zu]\n",indexof(ip->un.es->ep));
+			xprintf("->ep=expr[%zu]",indexof(ip->un.es->ep));
 			list1(ip->un.es->ep);
-			level-=4;
+			--level;
 			break;
 		case BRANCH:
-			xprintf("branch=\n");
-			level+=4;
-			xprintf(">cond=expr[%zu]\n",indexof(ip->un.eb->cond));
+			++level;
+			//xprintf("branch=\n");
+			xprintf("->cond=expr[%zu]",indexof(ip->un.eb->cond));
 			list1(ip->un.eb->cond);
-			xprintf(">body=expr[%zu]\n",indexof(ip->un.eb->body));
+			xprintf("->body=expr[%zu]",indexof(ip->un.eb->body));
 			list1(ip->un.eb->body);
-			xprintf(">value=expr[%zu]\n",indexof(ip->un.eb->value));
+			xprintf("->value=expr[%zu]",indexof(ip->un.eb->value));
 			list1(ip->un.eb->value);
-			level-=4;
+			--level;
 			break;
 		case MD:
-			xprintf("md(%zu)=\n",ip->un.em->dim);
-			level+=4;
-			for(size_t d=ip->un.em->dim,i=0;i<d;++i){
-				xprintf(">eps[%zu]=expr[%zu]\n",i,indexof(ip->un.em->eps+i));
+			++level;
+			//xprintf("md(%zu)=\n",d=ip->un.em->dim);
+			d=ip->un.em->dim;
+			for(size_t i=0;i<d;++i){
+				xprintf("->eps[%zu]=expr[%zu]",i,indexof(ip->un.em->eps+i));
 				list1(ip->un.em->eps+i);
 			}
-			level-=4;
+			--level;
 			break;
 		case VMD:
-			xprintf("vmd(%zu)=\n",ip->un.ev->max);
-			level+=4;
-			xprintf(">from=expr[%zu]\n",indexof(ip->un.ev->fromep));
+			++level;
+			xprintf("->max=%zu\n",ip->un.ev->max);
+			xprintf("->from=expr[%zu]",indexof(ip->un.ev->fromep));
 			list1(ip->un.ev->fromep);
-			xprintf(">to=expr[%zu]\n",indexof(ip->un.ev->toep));
+			xprintf("->to=expr[%zu]",indexof(ip->un.ev->toep));
 			list1(ip->un.ev->toep);
-			xprintf(">step=expr[%zu]\n",indexof(ip->un.ev->stepep));
+			xprintf("->step=expr[%zu]",indexof(ip->un.ev->stepep));
 			list1(ip->un.ev->stepep);
-			xprintf(">ep=expr[%zu]\n",indexof(ip->un.ev->ep));
+			xprintf("->ep=expr[%zu]",indexof(ip->un.ev->ep));
 			list1(ip->un.ev->ep);
-			level-=4;
+			--level;
 			break;
 		case HMD:
-			xprintf("hmd(%zu)=\n",ip->un.eh->dim);
-			level+=4;
-			for(size_t d=ip->un.em->dim,i=0;i<d;++i){
-				xprintf(">eps[%zu]=expr[%zu]\n",i,indexof(ip->un.eh->eps+i));
+			++level;
+			//xprintf("hmd(%zu)=\n",d=ip->un.eh->dim);
+			d=ip->un.eh->dim;
+			for(size_t i=0;i<d;++i){
+				xprintf("->eps[%zu]=expr[%zu]",i,indexof(ip->un.eh->eps+i));
 				list1(ip->un.eh->eps+i);
 			}
-			level-=4;
+			--level;
 			break;
 		case HOT:
-			xprintf("hot=expr[%zu]\n",indexof(ip->un.hotfunc));
-			level+=4;
+			++level;
+			xprintf("->hot=expr[%zu]",indexof(ip->un.hotfunc));
 			list1(ip->un.hotfunc);
-			level-=4;
+			--level;
 			break;
 		default:
 			break;
 	}
-		xprintf("%zu:expr[%zu]->data[%td] %s\n",line++,indexof(ep),ip-ep->data,ainst(ep,ip));
 	}
+	--level;
+	xprintf("}\n",ep->size,ep->vsize);
 }
 //
 void *readall(int fd,ssize_t *len){
