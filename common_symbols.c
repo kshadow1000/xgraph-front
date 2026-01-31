@@ -253,35 +253,70 @@ double d_read(double *args,size_t n){
 extern int lactive;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat"
+ssize_t linebuf(intptr_t fd,const void *buf,size_t size){
+	return expr_buffered_write_flushat((struct expr_buffered_file *)fd,buf,size,'\n');
+	//return expr_buffered_write((struct expr_buffered_file *)fd,buf,size);
+}
 double d_printf(double *args,size_t n){
 	const char *fmt=cast(*args,const char *);
 	size_t flen=strlen(fmt);
 	struct expr_buffered_file f;
 	ssize_t r,r1;
-	char *s;
-//	lactive=1;
-	r=expr_asprintf(&s,fmt,flen,(void **)args+1,n-1);
-	if(r<0)
-		return -r;
-	r=write(STDOUT_FILENO,s,r);
-	expr_deallocator(s);
-//	lactive=0;
-	return (double)r;
-	f.writer=(ssize_t (*)(intptr_t,const void *,size_t))write;
+	f.un.writer=(ssize_t (*)(intptr_t,const void *,size_t))write;
 	f.fd=STDOUT_FILENO;
 	f.buf=NULL;
 	f.index=0;
-	f.dynamic=13;
+	f.dynamic=BUFSIZ;
 	f.length=0;
-	r=expr_writef(fmt,flen,(void *)expr_buffered_write,(intptr_t)&f,(void **)args+1,n-1);
+	r=expr_writef(fmt,flen,linebuf,(intptr_t)&f,(void **)args+1,n-1);
+	r1=expr_buffered_close(&f);
 	if(r>=0){
-		r1=expr_buffered_close(&f);
 		if(r1<0)
 			r=r1;
 		else
 			r+=r1;
 	}
 	return (double)r;
+}
+#include <sys/poll.h>
+#include <fcntl.h>
+ssize_t nonblock_read(int fd,void *buf,size_t len){
+	struct pollfd pf;
+	int flag;
+	pf.fd=fd;
+	pf.events=POLLIN;
+	flag=fcntl(fd,F_GETFL,NULL);
+	fcntl(fd,F_SETFL,flag|O_NONBLOCK);
+	switch(poll(&pf,1,0)){
+		case 1:
+			return read(fd,buf,len);
+		case 0:
+			return 0;
+		default:
+			return -1;
+	}
+	fcntl(fd,F_SETFL,flag);
+}
+char getchbuf[6];
+struct expr_buffered_file getchf={
+	.un={.reader=(void *)read},
+	.fd=STDIN_FILENO,
+	.buf=getchbuf,
+	.index=0,
+	.dynamic=0,
+	.length=6,
+	.written=0,
+};
+static void __attribute__((destructor)) chend(void){
+	//getchf.un.reader=nonblock_read;
+	//expr_buffered_dropall(&getchf);
+}
+double d_getchar(void){
+	unsigned char c;
+	ssize_t r=expr_buffered_read(&getchf,&c,1);
+	if(r<1)
+		return -1;
+	return (double)c;
 }
 double d_printk(double *args,size_t n){
 	const char *fmt=cast(*args,const char *);
@@ -401,6 +436,7 @@ void add_common_symbols(struct expr_symset *es){
 	setza(geteuid);
 	setza(getgid);
 	setza(getegid);
+	setza(getchar);
 	setzau(fork);
 	setzau(vfork);
 #define setfunc(c) expr_symset_add(es,#c,EXPR_FUNCTION,0,d_##c,EXPR_SF_UNSAFE)

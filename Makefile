@@ -16,19 +16,19 @@ common_symbols.o: common_symbols.c
 	$(CC) $(CFLAG) common_symbols.c -c -o common_symbols.o
 .PHONY:
 leak: calc.c xgraph/expr/expr.c common_symbols.c
-	$(CC) -Wall -fsanitize=address leak.c -g calc.c common_symbols.c -o calc xgraph/expr/expr.c -lm
+	$(CC) -Wall -fsanitize=address xgraph/expr/leak.c -g calc.c common_symbols.c -o calc xgraph/expr/expr.c -lm
 .PHONY:
 leakw: wave.c xgraph/expr/expr.c common_symbols.c
-	$(CC) -Wall -fsanitize=address leak.c -g wave.c -o wave xgraph/expr/expr.c -lm
+	$(CC) -Wall -fsanitize=address xgraph/expr/leak.c -g wave.c -o wave xgraph/expr/expr.c -lm
 .PHONY:
 leakl: list.c xgraph/expr/expr.c common_symbols.c
-	$(CC) -Wall -fsanitize=address leak.c -g -g list.c common_symbols.c -o list xgraph/expr/expr.c -lm
+	$(CC) -Wall -fsanitize=address xgraph/expr/leak.c -g -g list.c common_symbols.c -o list xgraph/expr/expr.c -lm
 .PHONY:
 leakd: main.c xgraph/expr/expr.c xgraph/graph/graph.c common_symbols.c
-	$(CC) -Wall -fsanitize=address leak.c -g -g main.c common_symbols.c -o draw xgraph/expr/expr.c xgraph/graph/graph.c xgraph/graph/texts/text.c xgraph/graph/texts/sbmp.c -lm
+	$(CC) -Wall -fsanitize=address xgraph/expr/leak.c -g -g main.c common_symbols.c -o draw xgraph/expr/expr.c xgraph/graph/graph.c xgraph/graph/texts/text.c xgraph/graph/texts/sbmp.c -lm
 .PHONY:
 debug: calc.c xgraph/expr/expr.c common_symbols.c
-	$(CC) -Wall -g calc.c common_symbols.c -o calc xgraph/expr/expr.c -lm
+	$(CC) -Wall -g calc.c common_symbols.c -o calc -DNDEBUG=0 xgraph/expr/expr.c -lm
 .PHONY:
 debugl: list.c xgraph/expr/expr.c common_symbols.c
 	$(CC) -Wall -g list.c common_symbols.c -o list xgraph/expr/expr.c -lm

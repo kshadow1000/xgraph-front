@@ -433,7 +433,7 @@ __attribute__((destructor)) void atend(void){
 	if(es)
 		expr_symset_free(es);
 	if(rbuf)
-		free(rbuf);
+		expr_deallocator(rbuf);
 }
 #define STACK_SIZE (128*1024)
 size_t sstack[STACK_SIZE]={0};
