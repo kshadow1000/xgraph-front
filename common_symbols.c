@@ -255,20 +255,42 @@ extern int lactive;
 #pragma GCC diagnostic ignored "-Wformat"
 ssize_t linebuf(intptr_t fd,const void *buf,size_t size){
 	return expr_buffered_write_flushat((struct expr_buffered_file *)fd,buf,size,'\n');
-	//return expr_buffered_write((struct expr_buffered_file *)fd,buf,size);
+}
+char printfbuf[BUFSIZ];
+struct expr_buffered_file printff={
+	.un={.writer=(expr_writer)write},
+	.fd=STDOUT_FILENO,
+	.buf=printfbuf,
+	.index=0,
+	.dynamic=0,
+	.length=sizeof(printfbuf),
+	.written=0,
+};
+static void __attribute__((destructor)) ffend(void){
+	expr_buffered_close(&printff);
 }
 double d_printf(double *args,size_t n){
 	const char *fmt=cast(*args,const char *);
 	size_t flen=strlen(fmt);
+	ssize_t r;
+	r=expr_writef(fmt,flen,linebuf,(intptr_t)&printff,(const union expr_argf *)args+1,n-1);
+	return (double)r;
+}
+double d_printk(double *args,size_t n){
+	const char *fmt=cast(*args,const char *);
+	size_t flen=strlen(fmt);
 	struct expr_buffered_file f;
 	ssize_t r,r1;
-	f.un.writer=(ssize_t (*)(intptr_t,const void *,size_t))write;
-	f.fd=STDOUT_FILENO;
+	int kfd=open("/dev/kmsg",O_WRONLY);
+	if(kfd<0)
+		return kfd;
+	f.un.writer=(expr_writer)write;
+	f.fd=kfd;
 	f.buf=NULL;
 	f.index=0;
 	f.dynamic=BUFSIZ;
 	f.length=0;
-	r=expr_writef(fmt,flen,linebuf,(intptr_t)&f,(void **)args+1,n-1);
+	r=expr_writef(fmt,flen,linebuf,(intptr_t)&f,(const union expr_argf *)args+1,n-1);
 	r1=expr_buffered_close(&f);
 	if(r>=0){
 		if(r1<0)
@@ -276,17 +298,18 @@ double d_printf(double *args,size_t n){
 		else
 			r+=r1;
 	}
+	close(kfd);
 	return (double)r;
 }
 #include <sys/poll.h>
 #include <fcntl.h>
 ssize_t nonblock_read(int fd,void *buf,size_t len){
 	struct pollfd pf;
-	int flag;
+//	int flag;
 	pf.fd=fd;
 	pf.events=POLLIN;
-	flag=fcntl(fd,F_GETFL,NULL);
-	fcntl(fd,F_SETFL,flag|O_NONBLOCK);
+//	flag=fcntl(fd,F_GETFL,NULL);
+//	fcntl(fd,F_SETFL,flag|O_NONBLOCK);
 	switch(poll(&pf,1,0)){
 		case 1:
 			return read(fd,buf,len);
@@ -295,7 +318,7 @@ ssize_t nonblock_read(int fd,void *buf,size_t len){
 		default:
 			return -1;
 	}
-	fcntl(fd,F_SETFL,flag);
+//	fcntl(fd,F_SETFL,flag);
 }
 char getchbuf[6];
 struct expr_buffered_file getchf={
@@ -317,34 +340,6 @@ double d_getchar(void){
 	if(r<1)
 		return -1;
 	return (double)c;
-}
-double d_printk(double *args,size_t n){
-	const char *fmt=cast(*args,const char *);
-	int r;
-	//pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
-	FILE *fp=NULL;
-	//pthread_mutex_lock(&mutex);
-	//if(!fp)
-		fp=fopen("/dev/kmsg","w");
-	if(!fp)goto err;
-	switch(n){
-		case 1:r=fprintf(fp,fmt);break;
-		case 2:r=fprintf(fp,fmt,args[1]);break;
-		case 3:r=fprintf(fp,fmt,args[1],args[2]);break;
-		case 4:r=fprintf(fp,fmt,args[1],args[2],args[3]);break;
-		case 5:r=fprintf(fp,fmt,args[1],args[2],args[3],args[4]);break;
-		case 6:r=fprintf(fp,fmt,args[1],args[2],args[3],args[4],args[5]);break;
-		case 7:r=fprintf(fp,fmt,args[1],args[2],args[3],args[4],args[5],args[6]);break;
-		case 8:r=fprintf(fp,fmt,args[1],args[2],args[3],args[4],args[5],args[6],args[7]);break;
-		default:r=fprintf(fp,"Too many args!");break;
-	}
-	//pthread_mutex_unlock(&mutex);
-	fclose(fp);
-	//fp=NULL;
-	return (double)r;
-err:
-	//pthread_mutex_unlock(&mutex);
-	return -1.0;
 }
 #pragma GCC diagnostic pop
 int isprime(unsigned long n){
