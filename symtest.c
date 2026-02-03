@@ -149,7 +149,7 @@ nosearch:
 	pes("before corrected");
 	/*
 	*/
-	expr_symset_correct(es);
+	//expr_symset_correct(es);
 	//expr_symset_save(es,alloc_hook(es->alength));
 	//fprintf(stderr,"write return %zd\n",expr_symset_write(es,(ssize_t (*)(intptr_t,const void *,size_t))write,STDOUT_FILENO));
 	for(int i=0;i<0;++i){
@@ -168,7 +168,7 @@ nosearch:
 		}
 	}
 	*/
-	expr_symset_free(es);
+	//expr_symset_free(es);
 	fprintf(stderr,"\ndeallocated\n");
 	return 0;
 }
