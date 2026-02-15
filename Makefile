@@ -15,31 +15,31 @@ common_symbols.o: common_symbols.c
 	make systable
 	$(CC) $(CFLAG) common_symbols.c -c -o common_symbols.o
 .PHONY:
-leak: calc.c xgraph/expr/expr.c common_symbols.c
-	$(CC) -Wall -fsanitize=address xgraph/expr/leak.c -g calc.c common_symbols.c -o calc xgraph/expr/expr.c xgraph/expr/expr_*.c -lm
+leak:
+	$(CC) -Wall -fsanitize=address xgraph/expr/leak.c -g calc.c common_symbols.c -o calc xgraph/expr/expr_*.c -lm
 .PHONY:
-leakw: wave.c xgraph/expr/expr.c common_symbols.c
-	$(CC) -Wall -fsanitize=address xgraph/expr/leak.c -g wave.c -o wave xgraph/expr/expr.c xgraph/expr/expr_*.c -lm
+leakw:
+	$(CC) -Wall -fsanitize=address xgraph/expr/leak.c -g wave.c -o wave xgraph/expr/expr_*.c -lm
 .PHONY:
-leakl: list.c xgraph/expr/expr.c common_symbols.c
-	$(CC) -Wall -fsanitize=address xgraph/expr/leak.c -g -g list.c common_symbols.c -o list xgraph/expr/expr.c xgraph/expr/expr_*.c -lm
+leakl:
+	$(CC) -Wall -fsanitize=address xgraph/expr/leak.c -g -g list.c common_symbols.c -o list xgraph/expr/expr_*.c -lm
 .PHONY:
-leakd: main.c xgraph/expr/expr.c xgraph/graph/graph.c common_symbols.c
-	$(CC) -Wall -fsanitize=address xgraph/expr/leak.c -g -g main.c common_symbols.c -o draw xgraph/expr/expr.c xgraph/expr/expr_*.c xgraph/graph/graph.c xgraph/graph/texts/text.c xgraph/graph/texts/sbmp.c -lm
+leakd:
+	$(CC) -Wall -fsanitize=address xgraph/expr/leak.c -g -g main.c common_symbols.c -o draw xgraph/expr/expr_*.c xgraph/graph/graph.c xgraph/graph/texts/text.c xgraph/graph/texts/sbmp.c -lm
 .PHONY:
-debug: calc.c xgraph/expr/expr.c common_symbols.c
-	$(CC) -Wall -g calc.c common_symbols.c -o calc -DNDEBUG=0 xgraph/expr/expr.c xgraph/expr/expr_*.c -lm
+debug:
+	$(CC) -Wall -g calc.c common_symbols.c -o calc -DNDEBUG=0 xgraph/expr/expr_*.c -lm
 .PHONY:
-debugl: list.c xgraph/expr/expr.c common_symbols.c
-	$(CC) -Wall -g list.c common_symbols.c -o list xgraph/expr/expr.c xgraph/expr/expr_*.c -lm
+debugl:
+	$(CC) -Wall -g list.c common_symbols.c -o list xgraph/expr/expr_*.c -lm
 .PHONY:
-symtestl: symtest.c common_symbols.c xgraph/expr/expr.c
-	$(CC) $(CFLAG) symtest.c common_symbols.o -o symtest xgraph/expr/expr.c xgraph/expr/expr_*.c -g -fsanitize=address -lm
+symtestl:
+	$(CC) $(CFLAG) symtest.c common_symbols.o -o symtest xgraph/expr/expr_*.c -g -fsanitize=address -lm
 .PHONY:
-symtest: symtest.c xgraph/xgraph.a common_symbols.o
+symtest:
 	$(CC) $(CFLAG) symtest.c common_symbols.o -o symtest $(LFLAG) -g
 .PHONY:
-sorttest: sorttest.c xgraph/xgraph.a common_symbols.o
+sorttest:
 	$(CC) $(CFLAG) sorttest.c common_symbols.o -o sorttest $(LFLAG)
 xgraph/xgraph.a: xgraph
 	make -C xgraph
