@@ -104,8 +104,8 @@ __attribute__((destructor)) void _ps##atend(void){\
 idex(eps,indexof);
 idex(ps,indexofp);
 idex(ups,indexofu);
-enum odtype {NUL,MEM,SUM,BRANCH,HOT,MD,VMD,HMD,VAL,ZVAL,MEMF,FLAG};
-char subexpr[]={[NUL]=0,[MEM]=0,[SUM]=1,[BRANCH]=1,[HOT]=1,[MD]=1,[VMD]=1,[HMD]=1,[VAL]=0,[ZVAL]=0,[MEMF]=0,[FLAG]=0,};
+enum odtype {NUL,MEM,ADDR,SUM,BRANCH,HOT,MD,VMD,HMD,VAL,ZVAL,MEMF,FLAG};
+char subexpr[]={[NUL]=0,[MEM]=0,[ADDR]=0,[SUM]=1,[BRANCH]=1,[HOT]=1,[MD]=1,[VMD]=1,[HMD]=1,[VAL]=0,[ZVAL]=0,[MEMF]=0,[FLAG]=0,};
 #define hassubexpr(_op) subexpr[ii[_op].st]
 struct inst_info {
 	const char *name;
@@ -115,7 +115,7 @@ const struct inst_info ii[]={
 [EXPR_COPY]={.name="copy",.st=MEM,},
 [EXPR_INPUT]={.name="input",.st=NUL,},
 [EXPR_CONST]={.name="const",.st=VAL,},
-[EXPR_BL]={.name="bl",.st=MEM,},
+[EXPR_BL]={.name="bl",.st=ADDR,},
 [EXPR_ADD]={.name="add",.st=MEM,},
 [EXPR_SUB]={.name="sub",.st=MEM,},
 [EXPR_MUL]={.name="mul",.st=MEM,},
@@ -166,7 +166,7 @@ const struct inst_info ii[]={
 [EXPR_LCMN]={.name="lcmn",.st=SUM,},
 [EXPR_LOOP]={.name="loop",.st=SUM,},
 [EXPR_FOR]={.name="for",.st=SUM,},
-[EXPR_ZA]={.name="za",.st=MEM,},
+[EXPR_ZA]={.name="za",.st=ADDR,},
 [EXPR_MD]={.name="md",.st=MD,},
 [EXPR_ME]={.name="me",.st=MD,},
 [EXPR_MEP]={.name="mep",.st=MD,},
@@ -257,6 +257,9 @@ const char *ainst(const struct expr *restrict ep,struct expr_inst *ip){
 			break;
 		case MEM:
 			sprintf(abuf+r," %-5s=%.3lg",od(ep,ip->un.uaddr),*ip->un.src);
+			break;
+		case ADDR:
+			sprintf(abuf+r," %-5s",od(ep,ip->un.uaddr));
 			break;
 		case MEMF:
 			sprintf(abuf+r," %-5s %s(%d)",od(ep,ip->un.uaddr),sysname((unsigned int)*ip->dst.dst),ip->flag);

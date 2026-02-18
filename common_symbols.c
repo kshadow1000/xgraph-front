@@ -254,7 +254,7 @@ extern int lactive;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat"
 ssize_t linebuf(intptr_t fd,const void *buf,size_t size){
-	return expr_buffered_write_flushat((struct expr_buffered_file *)fd,buf,size,'\n');
+	return expr_buffered_write_flushat((struct expr_buffered_file *)fd,buf,size,"\n",1);
 }
 char printfbuf[BUFSIZ];
 struct expr_buffered_file printff={
