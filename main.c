@@ -174,7 +174,8 @@ void writefile(const char *file,const void *buf,size_t sz){
 		char *p=strrchr(file,'.');
 		if(!p||strcmp(p,".bmp")){
 			warnx("unsupposed format \"%s\".calling ImageMagick",p?p:file);
-			pipe(pfd);
+			if(pipe(pfd)<0)
+				err(EXIT_FAILURE,"pipe");
 			pid=fork();
 			if(!pid){
 				close(pfd[1]);
