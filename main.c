@@ -12,6 +12,7 @@
 #include <termios.h>
 #include <string.h>
 #include <err.h>
+#include <syscall.h>
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <errno.h>
@@ -28,6 +29,7 @@
 #define RATIO 4096
 #define BUFSIZE (1024*1024)
 #define outstring(str) write(STDERR_FILENO,str,sizeof(str)-1);
+#define write(fd,buf,size) expr_internal_syscall3(SYS_write,fd,buf,size)
 void add_common_symbols(struct expr_symset *es);
 //#define free(v)
 ssize_t readall(int fd,void **pbuf){
@@ -200,7 +202,8 @@ void writefile(const char *file,const void *buf,size_t sz){
 		errx(EXIT_SUCCESS,"Done");
 	warnx("convert error.trying ffmpeg");
 ffmpeg:
-	pipe(pfd);
+	if(pipe(pfd)<0)
+		err(EXIT_FAILURE,"pipe");
 	pid=fork();
 	if(!pid){
 		close(pfd[1]);

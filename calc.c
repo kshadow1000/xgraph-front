@@ -15,6 +15,7 @@
 #include <getopt.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <syscall.h>
 #define BUFSIZE 4096
 //dump
 #include <stdarg.h>
@@ -22,6 +23,7 @@
 #define likely(cond) __builtin_expect(!!(cond),1)
 #define unlikely(cond) __builtin_expect(!!(cond),0)
 #define printf(fmt,...) dprintf(STDOUT_FILENO,fmt,##__VA_ARGS__)
+#define write(fd,buf,size) expr_internal_syscall3(SYS_write,fd,buf,size)
 const char *sysname(unsigned int id);
 static void *xmalloc(size_t size){
 	void *r;
@@ -395,7 +397,10 @@ void *readall(int fd,ssize_t *len){
 static int x=0;
 void printdouble(double val){
 	char *buf,*p;
-	asprintf(&buf,x?"%.4096lA":"%.4096lf",val);
+	if(asprintf(&buf,x?"%.4096lA":"%.4096lf",val)<0){
+		warn("asprintf");
+		return;
+	}
 	p=strchr(buf,'.');
 	if(p){
 		p+=strlen(p);

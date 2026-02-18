@@ -15,6 +15,7 @@
 #include <err.h>
 #include <errno.h>
 #include <time.h>
+#include <syscall.h>
 #include <sys/wait.h>
 #include <sys/resource.h>
 #include <signal.h>
@@ -22,6 +23,7 @@
 #include <stdarg.h>
 #include "xgraph/graph/bitmap.h"
 #include "xgraph/expr/expr.h"
+#define write(fd,buf,size) expr_internal_syscall3(SYS_write,fd,buf,size)
 struct expr_symset *es=NULL;
 void sdtime(double dsec){
 	struct timespec ts;
