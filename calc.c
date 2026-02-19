@@ -622,7 +622,6 @@ break2:
 		e=rbuf;
 	}
 break3:
-	srand48(getpid()^time(NULL));
 	es=new_expr_symset();
 	if(!es)
 		err(EXIT_FAILURE,"cannot allocate memory");
