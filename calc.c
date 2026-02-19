@@ -539,7 +539,6 @@ const struct option ops[]={
 	{"keep",0,NULL,'k'},
 	{"detach",0,NULL,'d'},
 	{"getchar",0,NULL,'g'},
-	{"add-builtin",0,NULL,'B'},
 	{"help",0,NULL,'h'},
 	{"file",1,NULL,'f'},
 	{NULL},
@@ -557,7 +556,6 @@ void show_help(const char *a0){
 			"\t--keep, -k\tkeep symbol sets,use with -d to make symbols visible\n"
 			"\t--detach, -d\tdetach each symbol sets,use with -k to make symbols visible\n"
 			"\t--getchar, -g\tcall getchar() on each instructions if -s/-c is set\n"
-			"\t--add-builtin, -B\tadd builtin symbols to symset\n"
 			"\t--file, -f file\tread expression from file\n"
 			"\t--help, -h\tshow this help\n"
 			"extend function:\n"
@@ -586,7 +584,7 @@ int main(int argc,char **argv){
 		errx(EXIT_FAILURE,"see --help");
 	opterr=1;
 	for(;;){
-		switch(getopt_long(argc,argv,"pnDt::NisckdgBf:h",ops,NULL)){
+		switch(getopt_long(argc,argv,"pnDt::Nisckdgf:h",ops,NULL)){
 			case 'p':
 				flag|=EXPR_IF_PROTECT;
 				break;
@@ -604,9 +602,6 @@ int main(int argc,char **argv){
 				break;
 			case 'd':
 				flag|=EXPR_IF_DETACHSYMSET;
-				break;
-			case 'B':
-				adbt=1;
 				break;
 			case 'g':
 				gchr=1;
