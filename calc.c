@@ -26,9 +26,43 @@ void add_common_symbols(struct expr_symset *);
 #define errx(v,fmt,...) ({fprintf(stderr,fmt "\n",##__VA_ARGS__);exit(v);})
 #define warn(fmt,...) ({fprintf(stderr,fmt ":%s\n",##__VA_ARGS__,strerror(errno));})
 #define warnx(fmt,...) ({fprintf(stderr,fmt "\n",##__VA_ARGS__);})
-#define sysname(id) ("unknown_syscall")
+#define sysname(id) ("unknown")
 #define add_common_symbols(esp) ((void)0)
 #endif
+
+ssize_t writecc(intptr_t fd,const void *buf,size_t size){
+	ssize_t r;
+	errno=0;
+	r=fwrite(buf,1,size,(FILE *)fd);
+	if(errno)
+		return -errno;
+	return r;
+}
+static ssize_t linebuf(intptr_t fd,const void *buf,size_t size){
+	return expr_buffered_write_flushat((struct expr_buffered_file *)fd,buf,size,"\n",1);
+}
+char printfbuf[BUFSIZ];
+struct expr_buffered_file printff={
+	.un={.writer=writecc},
+	.buf=printfbuf,
+	.index=0,
+	.dynamic=0,
+	.length=sizeof(printfbuf),
+	.written=0,
+};
+static void __attribute__((constructor)) ffstart(void){
+	printff.fd=(intptr_t)stdout;
+}
+static void __attribute__((destructor)) ffend(void){
+	expr_buffered_close(&printff);
+}
+double d_printf(double *args,size_t n){
+	const char *fmt=expr_cast(*args,const char *);
+	size_t flen=strlen(fmt);
+	ssize_t r;
+	r=expr_writef(fmt,flen,linebuf,(intptr_t)&printff,(const union expr_argf *)args+1,n-1);
+	return (double)r;
+}
 
 static void *xmalloc(size_t size){
 	void *r;
@@ -406,10 +440,9 @@ void *readall(intptr_t fd,ssize_t *len){
 	save[r]=0;
 	return save;
 }
-static int x=0;
 void printdouble(double val){
 	char *buf,*p;
-	if(asprintf(&buf,x?"%.4096lA":"%.4096lf",val)<0){
+	if(asprintf(&buf,"%.4096lf",val)<0){
 		warn("asprintf");
 		return;
 	}
@@ -427,10 +460,6 @@ struct expr_symset *es=NULL;
 char *rbuf=NULL;
 double atod2(const char *str){
 	double r;
-	/*char *c;
-	r=strtod(str,&c);
-	if(c==str||*c)
-		errx(EXIT_FAILURE,"invaild double %s",str);*/
 	int error=0;
 	char err[EXPR_SYMLEN];
 	r=expr_calc5(str,&error,err,NULL,EXPR_IF_PROTECT|EXPR_IF_NOKEYWORD);
@@ -516,7 +545,7 @@ const struct option ops[]={
 	{NULL},
 };
 void show_help(const char *a0){
-	fprintf(stdout,"usage: %s [options] expression/-\n"
+	fprintf(stdout,"usage: %s [options] expression\n"
 			"\t--safe, -p\twork on protected mode\n"
 			"\t--no-optimize, -n\tdo not optimize\n"
 			"\t--no-builtin, -N\tdo not use builtin symbols\n"
@@ -530,6 +559,7 @@ void show_help(const char *a0){
 			"\t--getchar, -g\tcall getchar() on each instructions if -s/-c is set\n"
 			"\t--add-builtin, -B\tadd builtin symbols to symset\n"
 			"\t--file, -f file\tread expression from file\n"
+			"\t--help, -h\tshow this help\n"
 			,a0);
 	exit(EXIT_SUCCESS);
 }
@@ -551,7 +581,7 @@ int main(int argc,char **argv){
 		errx(EXIT_FAILURE,"see --help");
 	opterr=1;
 	for(;;){
-		switch(getopt_long(argc,argv,"pnDt::NisckdgBf:",ops,NULL)){
+		switch(getopt_long(argc,argv,"pnDt::NisckdgBf:h",ops,NULL)){
 			case 'p':
 				flag|=EXPR_IF_PROTECT;
 				break;
@@ -629,10 +659,9 @@ break3:
 	expr_symset_add(es,"ret",EXPR_HOTFUNCTION,0,"(ep,val){reset(end);([ep]#([ep#SIZE_OFF]##(0#1))*INSTLEN)-->end;(end#-INSTLEN)->[[ep#IPP_OFF]];val->[[end]]}");
 	expr_symset_add(es,"destructor",EXPR_HOTFUNCTION,0,"(val){destruct(&#,&longjmp_out,&outbuf,val)}");
 	expr_symset_add(es,"outbuf",EXPR_VARIABLE,0,jb);
-	//printf("argc=%d,optind=%d(%s)\n",argc,optind,argv[optind]);
 	expr_symset_add(es,"argc",EXPR_CONSTANT,0,(double)(argc-optind));
 	expr_symset_add(es,"argv",EXPR_CONSTANT,0,expr_cast(argv+optind,double));
-	expr_symset_add(es,"table_default",EXPR_CONSTANT,0,expr_cast((void *)expr_writefmts_table_default,double));
+	expr_symset_add(es,"printf",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_printf,(size_t)0);
 	if(adbt||!nobt)
 		expr_builtin_symbol_addall(es,expr_symbols);
 	if(init_expr5(ep,e,"t",es,flag)<0){

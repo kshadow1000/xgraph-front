@@ -250,31 +250,8 @@ double d_read(double *args,size_t n){
 	size=(size_t)*(++args);
 	return read(fd,un.buf,size);
 }
-extern int lactive;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat"
-ssize_t linebuf(intptr_t fd,const void *buf,size_t size){
+static ssize_t linebuf(intptr_t fd,const void *buf,size_t size){
 	return expr_buffered_write_flushat((struct expr_buffered_file *)fd,buf,size,"\n",1);
-}
-char printfbuf[BUFSIZ];
-struct expr_buffered_file printff={
-	.un={.writer=(expr_writer)write},
-	.fd=STDOUT_FILENO,
-	.buf=printfbuf,
-	.index=0,
-	.dynamic=0,
-	.length=sizeof(printfbuf),
-	.written=0,
-};
-static void __attribute__((destructor)) ffend(void){
-	expr_buffered_close(&printff);
-}
-double d_printf(double *args,size_t n){
-	const char *fmt=cast(*args,const char *);
-	size_t flen=strlen(fmt);
-	ssize_t r;
-	r=expr_writef(fmt,flen,linebuf,(intptr_t)&printff,(const union expr_argf *)args+1,n-1);
-	return (double)r;
 }
 double d_printk(double *args,size_t n){
 	const char *fmt=cast(*args,const char *);
@@ -341,7 +318,6 @@ double d_getchar(void){
 		return -1;
 	return (double)c;
 }
-#pragma GCC diagnostic pop
 int isprime(unsigned long n){
 	if(n==2)return 1;
 	if(!(n&1))return 0;
@@ -468,7 +444,6 @@ void add_common_symbols(struct expr_symset *es){
 	setmd(kill,2);
 	setmd(listen,2);
 	setmd(printa,0);
-	setmd(printf,0);
 	setmd(printk,0);
 	setmd(read,3);
 	setmd(signal,2);
