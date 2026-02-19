@@ -563,7 +563,9 @@ void show_help(const char *a0){
 			"extend function:\n"
 			"\tprintf(format,...)\n"
 			"\tdestructor(val)\n"
-			,a0);
+			"example:\n"
+			"\t%s 3**2+sin(pi/6)\n"
+			,a0,a0);
 	exit(EXIT_SUCCESS);
 }
 int main(int argc,char **argv){
