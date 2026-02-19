@@ -6,25 +6,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include "xgraph/expr/expr.h"
 #include <time.h>
-#include <signal.h>
-#include <setjmp.h>
-#include <err.h>
 #include <getopt.h>
 #include <errno.h>
-#include <fcntl.h>
-#include <syscall.h>
+#include <stdarg.h>
 #define BUFSIZE 4096
 //dump
-#include <stdarg.h>
 #define PREFIX_SIZE 128
-#define likely(cond) __builtin_expect(!!(cond),1)
-#define unlikely(cond) __builtin_expect(!!(cond),0)
-#define printf(fmt,...) dprintf(STDOUT_FILENO,fmt,##__VA_ARGS__)
-#define write(fd,buf,size) expr_internal_syscall3(SYS_write,fd,buf,size)
+#define likely(cond) expr_likely(cond)
+#define unlikely(cond) expr_unlikely(cond)
+
+#if defined(__unix__)&&defined(COMMON_SYMBOLS)
+#include <err.h>
 const char *sysname(unsigned int id);
+void add_common_symbols(struct expr_symset *);
+#else
+#define err(v,fmt,...) ({fprintf(stderr,fmt ":%s\n",##__VA_ARGS__,strerror(errno));exit(v);})
+#define errx(v,fmt,...) ({fprintf(stderr,fmt "\n",##__VA_ARGS__);exit(v);})
+#define warn(fmt,...) ({fprintf(stderr,fmt ":%s\n",##__VA_ARGS__,strerror(errno));})
+#define warnx(fmt,...) ({fprintf(stderr,fmt "\n",##__VA_ARGS__);})
+#define sysname(id) ("unknown_syscall")
+#define add_common_symbols(esp) ((void)0)
+#endif
+
 static void *xmalloc(size_t size){
 	void *r;
 	r=malloc(size);
@@ -383,10 +388,17 @@ void list(const struct expr *restrict ep,const struct expr_symset *restrict esp)
 	--level;
 	xprintf("}\n",ep->size,ep->vsize);
 }
-//
-void *readall(int fd,ssize_t *len){
+ssize_t readcc(intptr_t fd,void *buf,size_t size){
+	ssize_t r;
+	errno=0;
+	r=fread(buf,1,size,(FILE *)fd);
+	if(errno)
+		return -errno;
+	return r;
+}
+void *readall(intptr_t fd,ssize_t *len){
 	char *save;
-	ssize_t r=expr_file_readfd((void *)read,fd,1,&save);
+	ssize_t r=expr_file_readfd((void *)readcc,fd,1,&save);
 	if(r<0)
 		return NULL;
 	if(len)
@@ -411,8 +423,6 @@ void printdouble(double val){
 	puts(buf);
 	free(buf);
 }
-double d_alarm(double);
-void add_common_symbols(struct expr_symset *);
 struct expr_symset *es=NULL;
 char *rbuf=NULL;
 double atod2(const char *str){
@@ -427,15 +437,6 @@ double atod2(const char *str){
 	if(error)
 		errx(EXIT_FAILURE,"invaild expression: %s (%s:%s)",str,expr_error(error),err);
 	return r;
-}
-sigjmp_buf sjb;
-void attimeout(int sig){
-	switch(sig){
-		case SIGALRM:
-			siglongjmp(sjb,1);
-		default:
-			break;
-	}
 }
 __attribute__((destructor)) void atend(void){
 	if(es)
@@ -502,7 +503,6 @@ const struct option ops[]={
 	{"no-optimize",0,NULL,'n'},
 	{"no-builtin",0,NULL,'N'},
 	{"dump",0,NULL,'D'},
-	{"timeout",2,NULL,'t'},
 	{"count",1,NULL,0xff01},
 	{"injection",0,NULL,'i'},
 	{"step",0,NULL,'s'},
@@ -521,7 +521,6 @@ void show_help(const char *a0){
 			"\t--no-optimize, -n\tdo not optimize\n"
 			"\t--no-builtin, -N\tdo not use builtin symbols\n"
 			"\t--dump, -D\tdump mode(do not evaluate)\n"
-			"\t--timeout[=seconds,default 1], -t\tset the timeout for evaluation\n"
 			"\t--count count\tevaluate how many times,default 1\n"
 			"\t--injection, -i\tuse injective function only\n"
 			"\t--step, -s\tstep mode\n"
@@ -540,13 +539,13 @@ int main(int argc,char **argv){
 	int dump=0;
 	int adbt=0;
 	int nobt=0;
-	int r0,fd;
+	int r0;
+	intptr_t fd;
 	enum {NORMAL,STEP,CALLBACK} mode=NORMAL;
 	size_t count=1;
-	double alarm_sec=0.0,r;
+	double r;
 	struct expr ep[1];
 	jmp_buf jb;
-	sighandler_t sigold;
 	setvbuf(stdout,NULL,_IONBF,0);
 	if(argc<2)
 		errx(EXIT_FAILURE,"see --help");
@@ -586,9 +585,6 @@ int main(int argc,char **argv){
 			case 'c':
 				mode=CALLBACK;
 				break;
-			case 't':
-				alarm_sec=optarg?atod2(optarg):1.0;
-				break;
 			case 0xff01:
 				count=(size_t)atod2(optarg);
 				break;
@@ -596,11 +592,11 @@ int main(int argc,char **argv){
 				show_help(*argv);
 				break;
 			case 'f':
-				fd=open(optarg,O_RDONLY);
-				if(fd<0)
+				fd=(intptr_t)fopen(optarg,"rb");
+				if(!fd)
 					err(EXIT_FAILURE,"cannot open file");
 				rbuf=readall(fd,NULL);
-				close(fd);
+				fclose((FILE *)fd);
 				if(!rbuf)
 					err(EXIT_FAILURE,"cannot read");
 				e=rbuf;
@@ -620,7 +616,7 @@ break2:
 	if(!e)
 		e=argv[optind];
 	if(!strcmp(e,"-")){
-		rbuf=readall(STDIN_FILENO,NULL);
+		rbuf=readall((intptr_t)stdin,NULL);
 		if(!rbuf)
 			err(EXIT_FAILURE,"cannot read expression from stdin");
 		e=rbuf;
@@ -640,8 +636,6 @@ break3:
 	expr_symset_add(es,"table_default",EXPR_CONSTANT,0,expr_cast((void *)expr_writefmts_table_default,double));
 	if(adbt||!nobt)
 		expr_builtin_symbol_addall(es,expr_symbols);
-//	for(int i=0;i<999999;++i)
-//		init_expr5(ep,e,"t",es,flag|EXPR_IF_INSTANT_FREE);
 	if(init_expr5(ep,e,"t",es,flag)<0){
 		if(*ep->errinfo)
 			errx(EXIT_FAILURE,"expression error:%s \"%s\"",expr_error(ep->error),ep->errinfo);
@@ -651,15 +645,6 @@ break3:
 	if(dump)
 		list(ep,es);
 	else {
-		if(alarm_sec!=0.0){
-			sigold=signal(SIGALRM,attimeout);
-			if(sigold==SIG_ERR)
-				err(EXIT_FAILURE,"cannot set alarm handler");
-			if(sigsetjmp(sjb,1)==1)
-				errx(EXIT_FAILURE,"evaluation timed out");
-			if(d_alarm(alarm_sec)<0)
-				err(EXIT_FAILURE,"cannot set alarm");
-		}
 		if((r0=setjmp(jb))){
 			warnx("expression destructed:%d",r0);
 			return EXIT_SUCCESS;
@@ -677,10 +662,6 @@ break3:
 					break;
 			}
 		}while(--count);
-		if(alarm_sec!=0.0){
-			d_alarm(0.0);
-			signal(SIGALRM,sigold);
-		}
 		printdouble(r);
 	}
 	expr_free(ep);
