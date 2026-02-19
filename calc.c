@@ -560,6 +560,9 @@ void show_help(const char *a0){
 			"\t--add-builtin, -B\tadd builtin symbols to symset\n"
 			"\t--file, -f file\tread expression from file\n"
 			"\t--help, -h\tshow this help\n"
+			"extend function:\n"
+			"\tprintf(format,...)\n"
+			"\tdestructor(val)\n"
 			,a0);
 	exit(EXIT_SUCCESS);
 }
