@@ -50,9 +50,6 @@ struct expr_buffered_file printff={
 	.length=sizeof(printfbuf),
 	.written=0,
 };
-static void __attribute__((constructor)) ffstart(void){
-	printff.fd=(intptr_t)stdout;
-}
 static void __attribute__((destructor)) ffend(void){
 	expr_buffered_close(&printff);
 }
@@ -656,6 +653,7 @@ break3:
 	if(!es)
 		err(EXIT_FAILURE,"cannot allocate memory");
 	add_common_symbols(es);
+	printff.fd=(intptr_t)stdout;
 	expr_symset_add(es,"ret",EXPR_HOTFUNCTION,0,"(ep,val){reset(end);([ep]#([ep#SIZE_OFF]##(0#1))*INSTLEN)-->end;(end#-INSTLEN)->[[ep#IPP_OFF]];val->[[end]]}");
 	expr_symset_add(es,"destructor",EXPR_HOTFUNCTION,0,"(val){destruct(&#,&longjmp_out,&outbuf,val)}");
 	expr_symset_add(es,"outbuf",EXPR_VARIABLE,0,jb);
