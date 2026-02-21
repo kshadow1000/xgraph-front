@@ -464,7 +464,7 @@ double atod2(const char *str){
 		errx(EXIT_FAILURE,"invaild expression: %s (%s:%s)",str,expr_error(error),err);
 	return r;
 }
-__attribute__((destructor)) void atend(void){
+void atend(void){
 	if(es)
 		expr_symset_free(es);
 	if(rbuf)
@@ -576,6 +576,7 @@ int main(int argc,char **argv){
 	double r;
 	struct expr ep[1];
 	jmp_buf jb;
+	atexit(atend);
 	setvbuf(stdout,NULL,_IONBF,0);
 	if(argc<2)
 		errx(EXIT_FAILURE,"see --help");
