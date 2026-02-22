@@ -55,7 +55,7 @@ const char *t2s[]={
 void add_common_symbols(struct expr_symset *);
 const char *aflag(int type,int flag,size_t dim){
 	static char abuf[64];
-	static char abuf1[64+16];
+	static char abuf1[64+16+20];
 	*abuf=0;
 		switch(type){
 			case EXPR_CONSTANT:
