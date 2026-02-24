@@ -11,14 +11,10 @@
 #include <errno.h>
 #include <stdarg.h>
 #include "expr.h"
-//#if defined(__unix__)
-//#include <fcntl.h>
-//#include <unistd.h>
-//#define PRINTF_OUTFD STDOUT_FILENO
-//#else
+#ifdef __unix__
+#define REAL_UNIX
+#endif
 #include "fake_unix.h"
-#define PRINTF_OUTFD ((intptr_t)stdout)
-//#endif
 #define BUFSIZE 4096
 //dump
 #define PREFIX_SIZE 128
@@ -26,14 +22,9 @@
 #define unlikely(cond) expr_unlikely(cond)
 
 #if defined(__unix__)&&defined(COMMON_SYMBOLS)
-#include <err.h>
 const char *sysname(unsigned int id);
 void add_common_symbols(struct expr_symset *);
 #else
-#define err(v,fmt,...) ({fprintf(stderr,fmt ":%s\n",##__VA_ARGS__,strerror(errno));exit(v);})
-#define errx(v,fmt,...) ({fprintf(stderr,fmt "\n",##__VA_ARGS__);exit(v);})
-#define warn(fmt,...) ({fprintf(stderr,fmt ":%s\n",##__VA_ARGS__,strerror(errno));})
-#define warnx(fmt,...) ({fprintf(stderr,fmt "\n",##__VA_ARGS__);})
 #define sysname(id) ("unknown")
 #define add_common_symbols(esp) ((void)0)
 #endif
@@ -613,7 +604,7 @@ int main(int argc,char **argv){
 				break;
 			case 'f':
 				fd=open(optarg,O_RDONLY);
-				if(fd<0)
+				if(fderr(fd))
 					err(EXIT_FAILURE,"cannot open file");
 				rbuf=readall(fd,NULL);
 				close(fd);
@@ -646,7 +637,7 @@ break3:
 	if(!es)
 		err(EXIT_FAILURE,"cannot allocate memory");
 	add_common_symbols(es);
-	printff.fd=PRINTF_OUTFD;
+	printff.fd=STDOUT_FILENO;
 	expr_symset_add(es,"ret",EXPR_HOTFUNCTION,0,"(ep,val){reset(end);([ep]#([ep#SIZE_OFF]##(0#1))*INSTLEN)-->end;(end#-INSTLEN)->[[ep#IPP_OFF]];val->[[end]]}");
 	expr_symset_add(es,"destructor",EXPR_HOTFUNCTION,0,"(val){destruct(&#,&longjmp_out,&outbuf,val)}");
 	expr_symset_add(es,"outbuf",EXPR_VARIABLE,0,jb);

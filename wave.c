@@ -21,8 +21,8 @@
 #include <signal.h>
 #include <getopt.h>
 #include <stdarg.h>
-#include "xgraph/graph/bitmap.h"
-#include "xgraph/expr/expr.h"
+#include "bitmap.h"
+#include "expr.h"
 #define write(fd,buf,size) expr_internal_syscall3(SYS_write,fd,buf,size)
 struct expr_symset *es=NULL;
 void sdtime(double dsec){
@@ -714,7 +714,6 @@ show_help:
 				exit(EXIT_FAILURE);
 				break;
 #ifdef TEXT_ENABLED
-//#define text_ok_check(_c) if(text_ok)errx(EXIT_FAILURE,"option -" _c " must be used before --text/-T")
 
 			case 'T':
 				text_scan(newdeft(),optarg);

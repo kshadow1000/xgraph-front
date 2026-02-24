@@ -5,14 +5,16 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include "xgraph/expr/expr.h"
+#include "expr.h"
 #include <time.h>
 #include <math.h>
-#include <err.h>
 #include <string.h>
 #include <assert.h>
 #include <alloca.h>
+#ifdef __unix__
+#define REAL_UNIX
+#endif
+#include "fake_unix.h"
 int allocated=0;
 int freed=0;
 static void *xmalloc(size_t size){
@@ -160,7 +162,9 @@ int adbt=0;
 void list_common(void){
 	size_t n=0;
 	struct expr_symset es[1]={EXPR_SYMSET_INITIALIZER};
+#ifdef REAL_UNIX
 	add_common_symbols(es);
+#endif
 	if(adbt)
 		expr_builtin_symbol_addall(es,expr_symbols);
 //	expr_symset_callback(es,list_symbol,NULL);
