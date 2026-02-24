@@ -6,11 +6,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "xgraph/expr/expr.h"
 #include <time.h>
 #include <getopt.h>
 #include <errno.h>
 #include <stdarg.h>
+#include "expr.h"
+//#if defined(__unix__)
+//#include <fcntl.h>
+//#include <unistd.h>
+//#define PRINTF_OUTFD STDOUT_FILENO
+//#else
+#include "fake_unix.h"
+#define PRINTF_OUTFD ((intptr_t)stdout)
+//#endif
 #define BUFSIZE 4096
 //dump
 #define PREFIX_SIZE 128
@@ -30,20 +38,12 @@ void add_common_symbols(struct expr_symset *);
 #define add_common_symbols(esp) ((void)0)
 #endif
 
-ssize_t writecc(intptr_t fd,const void *buf,size_t size){
-	ssize_t r;
-	errno=0;
-	r=fwrite(buf,1,size,(FILE *)fd);
-	if(errno)
-		return -errno;
-	return r;
-}
 static ssize_t linebuf(intptr_t fd,const void *buf,size_t size){
 	return expr_buffered_write_flushat((struct expr_buffered_file *)fd,buf,size,"\n",1);
 }
 char printfbuf[BUFSIZ];
 struct expr_buffered_file printff={
-	.un={.writer=writecc},
+	.un={.writer=(expr_writer)write},
 	.buf=printfbuf,
 	.index=0,
 	.dynamic=0,
@@ -419,17 +419,9 @@ void list(const struct expr *restrict ep,const struct expr_symset *restrict esp)
 	--level;
 	xprintf("}\n",ep->size,ep->vsize);
 }
-ssize_t readcc(intptr_t fd,void *buf,size_t size){
-	ssize_t r;
-	errno=0;
-	r=fread(buf,1,size,(FILE *)fd);
-	if(errno)
-		return -errno;
-	return r;
-}
 void *readall(intptr_t fd,ssize_t *len){
 	char *save;
-	ssize_t r=expr_file_readfd((void *)readcc,fd,1,&save);
+	ssize_t r=expr_file_readfd((void *)read,fd,1,&save);
 	if(r<0)
 		return NULL;
 	if(len)
@@ -620,11 +612,11 @@ int main(int argc,char **argv){
 				show_help(*argv);
 				break;
 			case 'f':
-				fd=(intptr_t)fopen(optarg,"rb");
-				if(!fd)
+				fd=open(optarg,O_RDONLY);
+				if(fd<0)
 					err(EXIT_FAILURE,"cannot open file");
 				rbuf=readall(fd,NULL);
-				fclose((FILE *)fd);
+				close(fd);
 				if(!rbuf)
 					err(EXIT_FAILURE,"cannot read");
 				e=rbuf;
@@ -654,7 +646,7 @@ break3:
 	if(!es)
 		err(EXIT_FAILURE,"cannot allocate memory");
 	add_common_symbols(es);
-	printff.fd=(intptr_t)stdout;
+	printff.fd=PRINTF_OUTFD;
 	expr_symset_add(es,"ret",EXPR_HOTFUNCTION,0,"(ep,val){reset(end);([ep]#([ep#SIZE_OFF]##(0#1))*INSTLEN)-->end;(end#-INSTLEN)->[[ep#IPP_OFF]];val->[[end]]}");
 	expr_symset_add(es,"destructor",EXPR_HOTFUNCTION,0,"(val){destruct(&#,&longjmp_out,&outbuf,val)}");
 	expr_symset_add(es,"outbuf",EXPR_VARIABLE,0,jb);
