@@ -162,7 +162,7 @@ int adbt=0;
 void list_common(void){
 	size_t n=0;
 	struct expr_symset es[1]={EXPR_SYMSET_INITIALIZER};
-#ifdef REAL_UNIX
+#ifdef COMMON_SYMBOLS
 	add_common_symbols(es);
 #endif
 	if(adbt)
