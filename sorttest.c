@@ -4,7 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
-#include "xgraph/expr/expr.h"
+#include "expr.h"
 #include <time.h>
 #include <err.h>
 //#define printf(f,...) 1
@@ -33,9 +33,9 @@ int main(int argc,char **argv){
 		default:
 			break;
 	}
-	srand48(time(NULL)+getpid());
-	srand(time(NULL)+getpid());
-	srandom(time(NULL)+getpid());
+	srand48(time(NULL)+(intptr_t)main);
+	srand(time(NULL)+(intptr_t)main);
+	srandom(time(NULL)+(intptr_t)main);
 	for(size_t i=from;i<=to;++i,printf("\n")){
 		t3=0.0;
 		int r;

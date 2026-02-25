@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "expr.h"
-#include <time.h>
 #include <math.h>
 #include <string.h>
 #include <assert.h>
@@ -109,7 +108,6 @@ void psymbol(int type,int flag,size_t dim,const char *str,const union expr_symva
 		printf("%s\n",t2s[type]);
 }
 void list(void){
-	srand48(time(NULL)+getpid());
 	psize(struct expr);
 	psize(struct expr_inst);
 	psize(struct expr_suminfo);
