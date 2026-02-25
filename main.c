@@ -11,7 +11,6 @@
 #include <float.h>
 #include "graph.h"
 #include "expr.h"
-#undef __unix__
 #ifdef __unix__
 #define REAL_UNIX
 #endif
