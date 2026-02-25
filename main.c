@@ -11,6 +11,7 @@
 #include <float.h>
 #include "graph.h"
 #include "expr.h"
+#undef __unix__
 #ifdef __unix__
 #define REAL_UNIX
 #endif
@@ -280,7 +281,7 @@ int main(int argc,char **argv){
 	free(bar);
 	if(frombuf)
 		free(frombuf);
-	writefile(file,graph_getbmp(&g),graph_bmpsize(&g));
+	writefile(file,g.bm,g.bm->size);
 	warnx("Done");
 	return EXIT_SUCCESS;
 }
