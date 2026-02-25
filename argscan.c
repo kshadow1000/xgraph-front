@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 struct argtype {
-	const char *name,*alias;
+	const char *name,*alias,*desc;
 	union {
 		void *uval;
 		char **sval;

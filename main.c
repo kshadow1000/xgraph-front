@@ -67,15 +67,19 @@ void *drawing(void *args){
 	//graph_drawep(&g,color,FBOLD,xep,yep,from,to,step,currents);
 	return NULL;
 }
+int protect=0;
 int drawat(char *ey){
 	int srate,lrate,mrate,pc,mpc;
 	pthread_t pt;
 	double gap=(to-from)/thread;
 	char *wbuf0,ei[EXPR_SYMLEN];
-		xeps=new_expr7(ex,para,es,0,thread,&pc,ei);
-		if(!xeps)errx(EXIT_FAILURE,"x expression error:%s (%s)",expr_error(pc),ei);
-		yeps=new_expr7(ey,para,es,0,thread,&pc,ei);
-		if(!yeps)errx(EXIT_FAILURE,"y expression error:%s (%s)",expr_error(pc),ei);
+	int flag=protect?EXPR_IF_PROTECT:0;
+	xeps=new_expr7(ex,para,es,flag,thread,&pc,ei);
+	if(!xeps)
+		errx(EXIT_FAILURE,"x expression error:%s (%s)",expr_error(pc),ei);
+	yeps=new_expr7(ey,para,es,flag,thread,&pc,ei);
+	if(!yeps)
+		errx(EXIT_FAILURE,"y expression error:%s (%s)",expr_error(pc),ei);
 	for(int i=0;i<thread;++i){
 		currents[i]=DBL_MIN;
 	}
@@ -109,9 +113,12 @@ int drawat(char *ey){
 		for(int i=0;i<thread;++i){
 			double s;
 			s=from+i*gap;
-			if(currents[i]==DBL_MAX)pc=10000;
-			else if(currents[i]==DBL_MIN)pc=0;
-			else pc=(int)((currents[i]-s)*10000/gap);
+			if(currents[i]==DBL_MAX)
+				pc=10000;
+			else 
+				if(currents[i]==DBL_MIN)pc=0;
+			else
+				pc=(int)((currents[i]-s)*10000/gap);
 			rate=barlen*pc/10000;
 			srate+=pc;
 			if(wsize.ws_row>thread+3){
@@ -180,37 +187,38 @@ int a_ratio(char *cnt){
 int no_connect=0;
 char *frombmp=NULL,*frombuf=NULL,*file=NULL;
 int printhelp(void);
-#define ARG(a1,a2,dst,t,p) {.name=a1,.alias=a2,.un={.uval=dst},.type=t,.period=p,}
+#define ARG(a1,a2,dst,t,p,d) {.name=a1,.alias=a2,.desc=d,.un={.uval=dst},.type=t,.period=p,}
 const struct argtype ats[]={
-	ARG("thread","T",&thread,AT_INT,0),
-	ARG("ratio",NULL,a_ratio,AT_CALL,0),
-	ARG("frombmp",NULL,&frombmp,AT_STR,0),
-	ARG(NULL,"x",&ex,AT_STR,1),
-	ARG("no-connect",NULL,&no_connect,AT_BOOLX,0),
-	ARG("minx",NULL,&minx,AT_DOUBLE,0),
-	ARG("maxx",NULL,&maxx,AT_DOUBLE,0),
-	ARG("miny",NULL,&miny,AT_DOUBLE,0),
-	ARG("maxy",NULL,&maxy,AT_DOUBLE,0),
-	ARG("gapx",NULL,&gapx,AT_DOUBLE,0),
-	ARG("gapy",NULL,&gapy,AT_DOUBLE,0),
-	ARG(NULL,"nv",a_nv,AT_CALLZ,0),
-	ARG("output","o",&file,AT_STR,0),
-	ARG("from",NULL,&from,AT_DOUBLE,1),
-	ARG("to",NULL,&to,AT_DOUBLE,1),
-	ARG("step",NULL,&step,AT_DOUBLE,1),
-	ARG("color",NULL,&color,AT_INT,1),
-	ARG("help","h",printhelp,AT_CALLZ,0),
+	ARG("thread","T",&thread,AT_INT,0,"count -- how many threads used"),
+	ARG("ratio",NULL,a_ratio,AT_CALL,0,"WxH -- ratio of bitmap"),
+	ARG("frombmp",NULL,&frombmp,AT_STR,0,"file -- use a bitmap as background"),
+	ARG(NULL,"x",&ex,AT_STR,1,"expression -- set the expression for x,default:x(t)=t"),
+	ARG("no-connect",NULL,&no_connect,AT_BOOLX,0,"do not connect discontinuities"),
+	ARG("minx",NULL,&minx,AT_DOUBLE,0,"x -- minimal x of the graph"),
+	ARG("maxx",NULL,&maxx,AT_DOUBLE,0,"x -- maximal x of the graph"),
+	ARG("miny",NULL,&miny,AT_DOUBLE,0,"y -- minimal y of the graph"),
+	ARG("maxy",NULL,&maxy,AT_DOUBLE,0,"y -- maximal y of the graph"),
+	ARG("gapx",NULL,&gapx,AT_DOUBLE,0,"gap -- gap of x asix of the graph"),
+	ARG("gapy",NULL,&gapy,AT_DOUBLE,0,"gap -- gap of y asix of the graph"),
+	ARG(NULL,"nv",a_nv,AT_CALLZ,0,"hide the drawing progress of each threads"),
+	ARG("output","o",&file,AT_STR,0,"file -- output file, \"-\" for stdout"),
+	ARG("from",NULL,&from,AT_DOUBLE,1,"t -- minimal t of the graph"),
+	ARG("to",NULL,&to,AT_DOUBLE,1,"t -- minimal t of the graph"),
+	ARG("step",NULL,&step,AT_DOUBLE,1,"step -- step of t"),
+	ARG("color",NULL,&color,AT_INT,1,"color -- color of the functions"),
+	ARG("safe","p",&protect,AT_BOOL,1,"work in protected mode"),
+	ARG("help","h",printhelp,AT_CALLZ,0,"show this help"),
 	{NULL,NULL}
 //	ARG("",,&,AT_,0),
 };
 int printhelp(void){
 	for(const struct argtype *atp=ats;atp->name||atp->alias;++atp){
 		if(atp->name&&atp->alias)
-			fprintf(stderr,"--%-12s,-%-4s\n",atp->name,atp->alias);
+			fprintf(stderr,"--%-12s,-%-4s%16s\n",atp->name,atp->alias,atp->desc);
 		else if(atp->name)
-			fprintf(stderr,"--%-12s\n",atp->name);
+			fprintf(stderr,"--%-12s%16s\n",atp->name,atp->desc);
 		else
-			fprintf(stderr,"%-15s-%-4s\n","",atp->alias);
+			fprintf(stderr,"%-15s-%-4s%16s\n","",atp->alias,atp->desc);
 	}
 	exit(EXIT_SUCCESS);
 }
