@@ -6,9 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <assert.h>
 #include <string.h>
-#include <err.h>
 #include <errno.h>
 #include <float.h>
 #include "graph.h"
@@ -60,7 +58,6 @@ double maxy=SIZE,miny=-SIZE,maxx=SIZE,minx=-SIZE,from=-SIZE,to=SIZE,gapx=1.0,gap
 char *bar,*wbuf;
 const char *ex="t",*para="t";
 double draw_connect(double *args,size_t n){
-	assert(n==4);
 	graph_connect(&g,color,0,args[0],args[1],args[2],args[3]);
 	return NAN;
 }
