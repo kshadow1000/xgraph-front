@@ -10,7 +10,6 @@
 #include <math.h>
 #include <string.h>
 #include <assert.h>
-#include <alloca.h>
 #ifdef __unix__
 #define REAL_UNIX
 #endif
@@ -169,7 +168,7 @@ void list_common(void){
 		expr_builtin_symbol_addall(es,expr_symbols);
 //	expr_symset_callback(es,list_symbol,NULL);
 //	expr_symset_callbacks(es,list_symbol1);
-	expr_symset_foreach4(sp,es,alloca(es->depth*EXPR_SYMSET_DEPTHUNIT),EXPR_SYMNEXT){
+	expr_symset_foreach4(sp,es,__builtin_alloca(es->depth*EXPR_SYMSET_DEPTHUNIT),EXPR_SYMNEXT){
 		list_symbol(sp);
 		++n;
 	}
