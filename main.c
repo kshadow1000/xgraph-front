@@ -97,7 +97,8 @@ int drawat(char *ey){
 	wbuf0=wbuf+sprintf(wbuf,"\033[%dA",wsize.ws_row<=thread+3?3:thread+3);
 	lrate=-1;
 	mrate=thread*10000;
-	pthread_create(&pt,NULL,drawing,NULL);
+	if(pthread_create(&pt,NULL,drawing,NULL)<0)
+			err(EXIT_FAILURE,"cannot create thread");
 	for(;;){
 		char *p=wbuf0;
 		int rate;
@@ -145,7 +146,8 @@ int drawat(char *ey){
 		//if(srate==lrate)usleep(sleep_gap);
 	}
 	//write(STDERR_FILENO,"\033[?25h",6);
-	pthread_join(pt,NULL);
+	if(pthread_join(pt,NULL)<0)
+		err(EXIT_FAILURE,"pthread_join");
 	expr_free(xeps);
 	expr_free(yeps);
 	return 0;
