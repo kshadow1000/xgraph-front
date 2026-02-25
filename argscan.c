@@ -4,7 +4,6 @@
  *This is free software: you are free to change and redistribute it.           *
  *******************************************************************************/
 //#define _GNU_SOURCE
-#include <err.h>
 #include <stdlib.h>
 #include <stdint.h>
 struct argtype {
