@@ -220,7 +220,7 @@ int main(int argc,char **argv){
 	barlen=wsize.ws_col>28?wsize.ws_col-28:0;
 	init_expr_symset(es);
 	if(argc<2)
-		errx(EXIT_FAILURE,"see --help");
+		printhelp();
 	if(argscan(argc-1,argv+1,0,ats,NULL)<0)
 		exit(EXIT_FAILURE);
 	if(!file)

@@ -562,7 +562,7 @@ int main(int argc,char **argv){
 	atexit(atend);
 	setvbuf(stdout,NULL,_IONBF,0);
 	if(argc<2)
-		errx(EXIT_FAILURE,"see --help");
+		show_help(*argv);
 	opterr=1;
 	for(;;){
 		switch(getopt_long(argc,argv,"pnDt::Nisckdgf:h",ops,NULL)){
