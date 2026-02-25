@@ -1,16 +1,14 @@
-#include <err.h>
-#include <pthread.h>
-unsigned long prime(unsigned long x){
-	static unsigned long *p=NULL;
+uint64_t prime(uint64_t x){
+	static uint64_t *p=NULL;
 	static size_t n=0;
 	static size_t size=0;
 	static int im65=0;
-	unsigned long *lp;
-	unsigned long endn;
+	uint64_t *lp;
+	uint64_t endn;
 	size_t sizem1;
 	if(!n){
-		lp=malloc((size=5ul)*sizeof(unsigned long));
-		if(!lp)return 0ul;
+		lp=malloc((size=5)*sizeof(uint64_t));
+		if(!lp)return 0;
 		p=lp;
 		p[0]=1;
 		p[1]=2;
@@ -21,16 +19,16 @@ unsigned long prime(unsigned long x){
 	}
 	if(x<=n)return p[x];
 	if(x+1>=size){
-		sizem1=(x+1025ul)&~1023ul;
-		lp=realloc(p,sizem1*sizeof(unsigned long));
-		if(!lp)return 0ul;
+		sizem1=(x+1025)&~1023;
+		lp=realloc(p,sizem1*sizeof(uint64_t));
+		if(!lp)return 0;
 		p=lp;
 		size=sizem1;
 	}
 	sizem1=size-1;
-	for(unsigned long i=p[n]+(im65?2:4);n<sizem1;){
-		endn=(unsigned long)(sqrt((double)i)+1.0);
-		for(unsigned long i1=1;p[i1]<=endn&&i1<=n;++i1){
+	for(uint64_t i=p[n]+(im65?2:4);n<sizem1;){
+		endn=(uint64_t)(sqrt((double)i)+1.0);
+		for(uint64_t i1=1;p[i1]<=endn&&i1<=n;++i1){
 			if(!(i%p[i1]))goto fail;
 		}
 		p[++n]=i;
@@ -40,33 +38,33 @@ fail:
 	}
 	return p[x];
 }
-unsigned long prime_mt(unsigned long x){
-	static pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
-	unsigned long r;
-	pthread_mutex_lock(&mutex);
+uint64_t prime_mt(uint64_t x){
+	static uint32_t mutex=0;
+	uint64_t r;
+	expr_mutex_lock(&mutex);
 	r=prime(x);
-	pthread_mutex_unlock(&mutex);
+	expr_mutex_unlock(&mutex);
 	return r;
 }
-unsigned long prime_old(unsigned long x){
-	unsigned long im65,im652;
-	unsigned long i,endn;
+uint64_t prime_old(uint64_t x){
+	uint64_t im65,im652;
+	uint64_t i,endn;
 	switch(x){
-		case 0ul:return 1;
-		case 1ul:return 2;
-		case 2ul:return 3;
-		case 3ul:return 5;
-		case 4ul:return 7;
+		case 0:return 1;
+		case 1:return 2;
+		case 2:return 3;
+		case 3:return 5;
+		case 4:return 7;
 		default:break;
 	}
 	im65=0;
 	x-=4;
 	for(i=11;;){
-		endn=(unsigned long)(sqrt((double)i)+1.0);
+		endn=(uint64_t)(sqrt((double)i)+1.0);
 		if(!(i&1))goto fail;
 		if(!(i%3))goto fail;
 		im652=0;
-		for(unsigned long i1=5;i1<=endn;){
+		for(uint64_t i1=5;i1<=endn;){
 			if(!(i%i1))goto fail;
 			if(im652^=1)i1+=2;
 			else i1+=4;

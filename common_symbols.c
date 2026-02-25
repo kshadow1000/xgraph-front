@@ -3,22 +3,20 @@
  *This is free software: you are free to change and redistribute it.           *
  *******************************************************************************/
 #define _GNU_SOURCE
-#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <unistd.h>
-#include "xgraph/expr/expr.h"
+#include "expr.h"
 #include <time.h>
 #include <math.h>
 #include "prime.c"
 #include <float.h>
-#include <fcntl.h>
 #include <stdarg.h>
 #include <string.h>
-#include <signal.h>
-#include <pthread.h>
 #include <errno.h>
+#ifdef __unix__
+#define REAL_UNIX
+#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/random.h>
 #include <arpa/inet.h>
@@ -27,26 +25,19 @@
 #include <syscall.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <signal.h>
+#include <fcntl.h>
 static const char *sysnames[]={
 #define register_syscall(sysid) [__NR_##sysid]=#sysid,
 #include "systable.c"
 #undef register_syscall
 };
-#define printval(x) warn(#x ":%lu",(unsigned long)(x))
-#define printvali(x) warn(#x ":%d",(int)(x))
-#define printvall(x) warn(#x ":%ld",(long)(x))
-#define printvald(x) warn(#x ":%lf",(double)(x))
-#define warn(fmt,...) fprintf(stderr,fmt "\n",##__VA_ARGS__)
+#endif
+#include "fake_unix.h"
 #define casting(x,T) ((T)(x))
 #define cast(x,T) expr_cast(x,T)
-/*_Generic(T,\
-		void *:expr_cast(x,T),\
-		double:(x),\
-		default:(T)(x)\
-		)
-		,void *:expr_cast(x,double)\*/
 #define castingd(x) ((double)(x))
-//_Generic((x),void *:(expr_cast(x,double)),default:((double)(x)))
+
 #define warp1(rtype,sym,atype) static double d_##sym(double x){\
 	rtype r=(rtype)sym(casting(x,atype));\
 	return castingd(r);\
@@ -91,6 +82,7 @@ static const char *sysnames[]={
 	rtype r=(rtype)sym();\
 	return castingd(r);\
 }
+#ifdef REAL_UNIX
 warpz(pid_t,fork)
 warpz(pid_t,vfork)
 warpz(pid_t,getpid)
@@ -104,25 +96,11 @@ warp1(int,setuid,uid_t)
 warp1(int,setgid,gid_t)
 warp1(int,seteuid,uid_t)
 warp1(int,setegid,gid_t)
-warp1(int,close,int)
 warp1(int,raise,int)
+warpip(in_addr_t,inet_addr,void *)
+warpip(pid_t,wait,void *)
 warp1(uint32_t,htonl,uint32_t)
 warp1(uint16_t,htons,uint16_t)
-warppi(void *,strerror,int)
-warpip(size_t,strlen,void *)
-warpppi(void *,strchr,void *,int)
-warpip(pid_t,wait,void *)
-warpip(in_addr_t,inet_addr,void *)
-warp2(int,kill,pid_t,int)
-warp2(int,listen,int,int)
-warppip(void *,signal,int,void *)
-warpipii(int,open,void *,int,int)
-warp3(int,socket,int,int,int)
-int tgkill(int,int,int);
-warp3(int,tgkill,int,int,int)
-warpiipi(int,bind,int,struct sockaddr *,socklen_t)
-warpiipi(int,connect,int,struct sockaddr *,socklen_t)
-warpiipp(int,accept,int,struct sockaddr *,socklen_t *)
 double last_sig;
 struct expr *volatile sigep[64+1];
 const struct addrinfo ai_req_icmp[1]={{
@@ -157,41 +135,6 @@ double d_signalep(double *v,size_t n){
 	sigep[s]=cast(v[1],struct expr *);
 	return cast(signal(s,d_sigep),double);
 }
-int vfdprintf_atomic(int fd,const char *restrict format,va_list ap){
-	int r;
-	char buf[PIPE_BUF];
-	if((r=vsnprintf(buf,PIPE_BUF,format,ap))==EOF)return EOF;
-	return write(fd,buf,r>PIPE_BUF?PIPE_BUF:r);
-}
-int fdprintf_atomic(int fd,const char *restrict format,...){
-	int r;
-	va_list ap;
-	va_start(ap,format);
-	r=vfdprintf_atomic(fd,format,ap);
-	va_end(ap);
-	return r;
-}
-int fprintd(int fd,double v){
-	char buf[PIPE_BUF],*p;
-	sprintf(buf,"%.64lf",v);
-	p=strchr(buf,'.');
-	if(p){
-		p+=strlen(p);
-		while(*(--p)=='0')*p=0;
-		if(*p=='.')*p=0;
-
-	}
-	return fdprintf_atomic(fd,"%s\n",buf);
-}
-int fprintda(int fd,double *v,size_t n){
-	int r;
-	if(!n)return 0;
-	r=0;
-	do
-		r+=fprintd(fd,*(v++));
-	while(--n);
-	return r;
-}
 double dtime(void){
 	struct timespec ts;
 	clock_gettime(CLOCK_REALTIME,&ts);
@@ -223,6 +166,25 @@ double d_alarm(double x){
 		return -1.0;
 	return (double)rtv.it_value.tv_sec+rtv.it_value.tv_usec/1000000000.0;
 }
+#include <sys/poll.h>
+#include <fcntl.h>
+ssize_t nonblock_read(int fd,void *buf,size_t len){
+	struct pollfd pf;
+	pf.fd=fd;
+	pf.events=POLLIN;
+	switch(poll(&pf,1,0)){
+		case 1:
+			return read(fd,buf,len);
+		case 0:
+			return 0;
+		default:
+			return -1;
+	}
+}
+#endif
+warppi(void *,strerror,int)
+warpip(size_t,strlen,void *)
+warpppi(void *,strchr,void *,int)
 #define a2s(buf,args,size) buf=alloca(size+1);\
 	for(size_t i=0;i<size;++i)\
 		buf[i]=(char)*(args++)
@@ -278,42 +240,20 @@ double d_printk(double *args,size_t n){
 	close(kfd);
 	return (double)r;
 }
-#include <sys/poll.h>
-#include <fcntl.h>
-ssize_t nonblock_read(int fd,void *buf,size_t len){
-	struct pollfd pf;
-//	int flag;
-	pf.fd=fd;
-	pf.events=POLLIN;
-//	flag=fcntl(fd,F_GETFL,NULL);
-//	fcntl(fd,F_SETFL,flag|O_NONBLOCK);
-	switch(poll(&pf,1,0)){
-		case 1:
-			return read(fd,buf,len);
-		case 0:
-			return 0;
-		default:
-			return -1;
-	}
-//	fcntl(fd,F_SETFL,flag);
-}
 char getchbuf[6];
 struct expr_buffered_file getchf={
 	.un={.reader=(void *)read},
-	.fd=STDIN_FILENO,
 	.buf=getchbuf,
 	.index=0,
 	.dynamic=0,
-	.length=6,
+	.length=sizeof(getchf),
 	.written=0,
 };
-static void __attribute__((destructor)) chend(void){
-	//getchf.un.reader=nonblock_read;
-	//expr_buffered_dropall(&getchf);
-}
 double d_getchar(void){
 	unsigned char c;
-	ssize_t r=expr_buffered_read(&getchf,&c,1);
+	ssize_t r;
+	getchf.fd=STDIN_FILENO;
+	r=expr_buffered_read(&getchf,&c,1);
 	if(r<1)
 		return -1;
 	return (double)c;
@@ -348,58 +288,38 @@ double d_prime_old(double x){
 double d_isprime(double x){
 	return (double)isprime((unsigned long)(fabs(x)));
 }
-double d_print(double x){
-	return (double)fprintd(STDOUT_FILENO,x);
-}
-
-double d_puts(double x){
-	/*union {
-		double d;
-		char *r;
-	} un;
-	un.d=x;*/
-	return (double)puts(expr_cast(x,const char *));
-}
-double d_fprint(double *args,size_t n){
-	return (double)fprintd((int)args[0],args[1]);
-}
-double d_printa(double *args,size_t n){
-	return (double)fprintda(STDOUT_FILENO,args,n);
-}
-double d_sorta_old(double *args,size_t n){
-	expr_sort_old(args,n);
-	return (double)fprintda(STDOUT_FILENO,args,n);
-}
-double d_sorta(double *args,size_t n){
-	if(expr_sort4(args,n,malloc,free)<0)
-		return NAN;
-	return (double)fprintda(STDOUT_FILENO,args,n);
-}
-double d_frya(double *args,size_t n){
-	expr_fry(args,n);
-	return (double)fprintda(STDOUT_FILENO,args,n);
-}
-double d_fprinta(double *args,size_t n){
-	return (double)fprintda((int)args[0],args+1,n-1);
-}
 double geterrno(void){
 	return cast(&errno,double);
 }
 volatile double vx[8];
+#define setza(c) expr_symset_add(es,#c,EXPR_ZAFUNCTION,0,d_##c)
+#define setzau(c) expr_symset_add(es,#c,EXPR_ZAFUNCTION,EXPR_SF_UNSAFE,d_##c)
+#define setfunc(c) expr_symset_add(es,#c,EXPR_FUNCTION,0,d_##c,EXPR_SF_UNSAFE)
+#define setfunci(c) expr_symset_add(es,#c,EXPR_FUNCTION,0,d_##c,EXPR_SF_INJECTION)
+#define setmd(c,dim) expr_symset_add(es,#c,EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_##c,(size_t)dim)
+#define setconst(c) expr_symset_add(es,#c,EXPR_CONSTANT,0,(double)(c))
 void add_common_symbols(struct expr_symset *es){
 	char buf[32];
 	for(size_t i=0;i<(sizeof(vx)/sizeof(*vx));++i){
 		sprintf(buf,"x%zu",i);
 		expr_symset_add(es,buf,EXPR_VARIABLE,0,vx+i);
 	}
-	//puts("vx ok");
 	expr_symset_add(es,"errno",EXPR_VARIABLE,0,&errno);
+	expr_symset_add(es,"geterrno",EXPR_ZAFUNCTION,0,geterrno);
+	setza(getchar);
+	setfunci(isprime);
+	setfunci(prime);
+	setfunci(prime_mt);
+	setfunci(prime_old);
+	setfunc(strerror);
+	setfunc(strlen);
+	setmd(strchr,2);
+	setconst(EXIT_FAILURE);
+	setconst(EXIT_SUCCESS);
+#ifdef REAL_UNIX
+	expr_symset_add(es,"time",EXPR_ZAFUNCTION,0,dtime);
 	expr_symset_add(es,"sig",EXPR_VARIABLE,0,&last_sig);
 	expr_symset_add(es,"sigep",EXPR_VARIABLE,0,&sigep);
-#define setza(c) expr_symset_add(es,#c,EXPR_ZAFUNCTION,0,d_##c)
-#define setzau(c) expr_symset_add(es,#c,EXPR_ZAFUNCTION,EXPR_SF_UNSAFE,d_##c)
-	expr_symset_add(es,"time",EXPR_ZAFUNCTION,0,dtime);
-	expr_symset_add(es,"geterrno",EXPR_ZAFUNCTION,0,geterrno);
 	setza(getpid);
 	setza(getppid);
 	setza(gettid);
@@ -407,22 +327,12 @@ void add_common_symbols(struct expr_symset *es){
 	setza(geteuid);
 	setza(getgid);
 	setza(getegid);
-	setza(getchar);
 	setzau(fork);
 	setzau(vfork);
-#define setfunc(c) expr_symset_add(es,#c,EXPR_FUNCTION,0,d_##c,EXPR_SF_UNSAFE)
-#define setfunci(c) expr_symset_add(es,#c,EXPR_FUNCTION,0,d_##c,EXPR_SF_INJECTION)
 	setfunc(alarm);
-	setfunc(close);
 	setfunci(htonl);
 	setfunci(htons);
-	setfunci(isprime);
-	setfunci(prime);
-	setfunci(prime_mt);
-	setfunci(prime_old);
-	setfunc(print);
 	setfunc(sigep);
-	setfunc(puts);
 	setfunc(raise);
 	setfunc(setsig);
 	setfunc(setuid);
@@ -430,32 +340,12 @@ void add_common_symbols(struct expr_symset *es){
 	setfunc(setgid);
 	setfunc(setegid);
 	setfunc(sleep);
-	setfunc(strerror);
-	setfunc(strlen);
 	setfunc(wait);
-#define setmd(c,dim) expr_symset_add(es,#c,EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_##c,(size_t)dim)
-	setmd(accept,3);
-	setmd(bind,3);
-	setmd(connect,0);
-	setmd(fprint,2);
-	setmd(fprinta,0);
-	setmd(frya,0);
 	setmd(inet_addr,0);
-	setmd(kill,2);
-	setmd(listen,2);
-	setmd(printa,0);
 	setmd(printk,0);
 	setmd(read,3);
-	setmd(signal,2);
 	setmd(signalep,2);
-	setmd(sorta,0);
-	setmd(sorta_old,0);
-	setmd(socket,3);
-	setmd(strchr,2);
-	setmd(tgkill,3);
 	setmd(write,3);
-	setmd(open,0);
-#define setconst(c) expr_symset_add(es,#c,EXPR_CONSTANT,0,(double)(c))
 	setconst(AF_UNIX);
 	setconst(AF_INET);
 	setconst(AF_INET6);
@@ -498,8 +388,6 @@ void add_common_symbols(struct expr_symset *es){
 	expr_symset_add(es,"SIG_DFL",EXPR_CONSTANT,expr_cast(SIG_DFL,double));
 	expr_symset_add(es,"SIG_ERR",EXPR_CONSTANT,expr_cast(SIG_ERR,double));
 	expr_symset_add(es,"SIG_IGN",EXPR_CONSTANT,expr_cast(SIG_IGN,double));
-	setconst(EXIT_FAILURE);
-	setconst(EXIT_SUCCESS);
 	setconst(SIGHUP);
 	setconst(SIGINT);
 	setconst(SIGQUIT);
@@ -548,7 +436,9 @@ void add_common_symbols(struct expr_symset *es){
 #define register_syscall(sysid) expr_symset_add(es,"sys_" #sysid,EXPR_CONSTANT,0,(double)(__NR_##sysid));
 #include "systable.c"
 #undef register_syscall
+#endif
 }
+#ifdef REAL_UNIX
 const char *sysname(unsigned int id){
 	const char *r;
 	if(id>=sizeof(sysnames)/sizeof(*sysnames))
@@ -558,3 +448,4 @@ const char *sysname(unsigned int id){
 		return "unknown";
 	return r;
 }
+#endif

@@ -51,6 +51,12 @@ double d_printf(double *args,size_t n){
 	r=expr_writef(fmt,flen,linebuf,(intptr_t)&printff,(const union expr_argf *)args+1,n-1);
 	return (double)r;
 }
+double d_printl(double *args,size_t n){
+	size_t len=(size_t)args[1];
+	ssize_t r;
+	r=expr_buffered_write_flushat(&printff,expr_cast(*args,const void *),len,"\n",1);
+	return (double)r;
+}
 
 static void *xmalloc(size_t size){
 	void *r;
@@ -540,6 +546,7 @@ void show_help(const char *a0){
 			"\t--help, -h\tshow this help\n"
 			"extend function:\n"
 			"\tprintf(format,...)\n"
+			"\tprintl(buf,len)\n"
 			"\tdestructor(val)\n"
 			"example:\n"
 			"\t%s 3**2+sin(pi/6)\n"
@@ -644,6 +651,7 @@ break3:
 	expr_symset_add(es,"argc",EXPR_CONSTANT,0,(double)(argc-optind));
 	expr_symset_add(es,"argv",EXPR_CONSTANT,0,expr_cast(argv+optind,double));
 	expr_symset_add(es,"printf",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_printf,(size_t)0);
+	expr_symset_add(es,"printl",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_printl,(size_t)2);
 	if(adbt||!nobt)
 		expr_builtin_symbol_addall(es,expr_symbols);
 	if(init_expr5(ep,e,"t",es,flag)<0){
