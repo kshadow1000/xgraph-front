@@ -13,7 +13,11 @@
 #include "expr.h"
 #ifdef __unix__
 #define REAL_UNIX
+const char *sysname(unsigned int id);
+#else
+#define sysname(id) ("unknown")
 #endif
+
 #include "fake_unix.h"
 #define BUFSIZE 4096
 //dump
@@ -21,14 +25,7 @@
 #define likely(cond) expr_likely(cond)
 #define unlikely(cond) expr_unlikely(cond)
 
-#if defined(__unix__)&&defined(COMMON_SYMBOLS)
-const char *sysname(unsigned int id);
 void add_common_symbols(struct expr_symset *);
-#else
-#define sysname(id) ("unknown")
-#define add_common_symbols(esp) ((void)0)
-#endif
-
 static ssize_t linebuf(intptr_t fd,const void *buf,size_t size){
 	return expr_buffered_write_flushat((struct expr_buffered_file *)fd,buf,size,"\n",1);
 }
