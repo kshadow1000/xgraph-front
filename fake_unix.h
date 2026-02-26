@@ -50,8 +50,6 @@ static __attribute__((unused)) intptr_t fake_open(const char *path,const char *f
 	FILE *fp;
 	errno=0;
 	fp=fopen(path,flags);
-	if(!fp)
-		return -errno;
 	return (intptr_t)fp;
 }
 #define open fake_open
