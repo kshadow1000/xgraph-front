@@ -258,23 +258,23 @@ double d_getchar(void){
 		return -1;
 	return (double)c;
 }
-int isprime(unsigned long n){
+int isprime(uint64_t n){
 	if(n==2)return 1;
 	if(!(n&1))return 0;
-	unsigned long end=(unsigned long)(sqrt(n)+1.0);
-	for(unsigned long i=3;i<end;i+=2)
+	uint64_t end=(uint64_t)(sqrt(n)+1.0);
+	for(uint64_t i=3;i<end;i+=2)
 		if(!(n%i))return 0;
 	return 1;
 }
-double cal_prime(double x,unsigned long (*f)(unsigned long)){
+double cal_prime(double x,uint64_t (*f)(uint64_t)){
 	double fx,xmfx;
 	if(x<=0.0)return 1.0;
 	fx=floor(x);
 	xmfx=x-fx;
 	if(xmfx<=DBL_EPSILON)
-		return (double)f((unsigned long)(x));
-	return (1.0-xmfx)*(double)f((unsigned long)(fx))
-		+xmfx*(double)f(1ul+(unsigned long)fx);
+		return (double)f((uint64_t)(x));
+	return (1.0-xmfx)*(double)f((uint64_t)(fx))
+		+xmfx*(double)f(1ul+(uint64_t)fx);
 }
 double d_prime(double x){
 	return cal_prime(x,prime);
@@ -286,7 +286,7 @@ double d_prime_old(double x){
 	return cal_prime(x,prime_old);
 }
 double d_isprime(double x){
-	return (double)isprime((unsigned long)(fabs(x)));
+	return (double)isprime((uint64_t)(fabs(x)));
 }
 double geterrno(void){
 	return cast(&errno,double);
