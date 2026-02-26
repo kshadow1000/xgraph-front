@@ -369,21 +369,35 @@ double geterrno(void){
 	return cast(&errno,double);
 }
 volatile double vx[8];
-#define checkok(X) ({if(!(X))errx(EXIT_FAILURE,"cannot add symbol");})
-#define setza(c) checkok(expr_symset_add(es,#c,EXPR_ZAFUNCTION,0,d_##c))
-#define setzau(c) checkok(expr_symset_add(es,#c,EXPR_ZAFUNCTION,EXPR_SF_UNSAFE,d_##c))
-#define setfunc(c) checkok(expr_symset_add(es,#c,EXPR_FUNCTION,0,d_##c,EXPR_SF_UNSAFE))
-#define setfunci(c) checkok(expr_symset_add(es,#c,EXPR_FUNCTION,0,d_##c,EXPR_SF_INJECTION))
-#define setmd(c,dim) checkok(expr_symset_add(es,#c,EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_##c,(size_t)dim))
-#define setconst(c) checkok(expr_symset_add(es,#c,EXPR_CONSTANT,0,(double)(c)))
+/*
+struct expr_symbol *symset_add(struct expr_symset *restrict esp,const char *sym,int type,int flag,...){
+	va_list ap;
+	struct expr_symbol *r;
+	va_start(ap,flag);
+	r=expr_symset_vadd(esp,sym,type,flag,ap);
+	warnx("vadd:%p -- %s",r,sym);
+	va_end(ap);
+	return r;
+}
+*/
+#define symset_add(esp,sym,type,flag,...) ({\
+	if(!(expr_symset_add(esp,sym,type,flag,##__VA_ARGS__)))\
+		errx(EXIT_FAILURE,"cannot add symbol %s",sym);\
+})
+#define setza(c) symset_add(es,#c,EXPR_ZAFUNCTION,0,d_##c)
+#define setzau(c) symset_add(es,#c,EXPR_ZAFUNCTION,EXPR_SF_UNSAFE,d_##c)
+#define setfunc(c) symset_add(es,#c,EXPR_FUNCTION,0,d_##c,EXPR_SF_UNSAFE)
+#define setfunci(c) symset_add(es,#c,EXPR_FUNCTION,0,d_##c,EXPR_SF_INJECTION)
+#define setmd(c,dim) symset_add(es,#c,EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_##c,(size_t)dim)
+#define setconst(c) symset_add(es,#c,EXPR_CONSTANT,0,(double)(c))
 void add_common_symbols(struct expr_symset *es){
 	char buf[32];
 	for(size_t i=0;i<(sizeof(vx)/sizeof(*vx));++i){
 		sprintf(buf,"x%zu",i);
-		expr_symset_add(es,buf,EXPR_VARIABLE,0,vx+i);
+		symset_add(es,buf,EXPR_VARIABLE,0,vx+i);
 	}
-	expr_symset_add(es,"errno",EXPR_VARIABLE,0,&errno);
-	expr_symset_add(es,"geterrno",EXPR_ZAFUNCTION,0,geterrno);
+	symset_add(es,"errno",EXPR_VARIABLE,0,&errno);
+	symset_add(es,"geterrno",EXPR_ZAFUNCTION,0,geterrno);
 	setza(getchar);
 	setfunci(isprime);
 	setfunci(prime);
@@ -395,9 +409,9 @@ void add_common_symbols(struct expr_symset *es){
 	setconst(EXIT_FAILURE);
 	setconst(EXIT_SUCCESS);
 #ifdef REAL_UNIX
-	expr_symset_add(es,"time",EXPR_ZAFUNCTION,0,dtime);
-	expr_symset_add(es,"sig",EXPR_VARIABLE,0,&last_sig);
-	expr_symset_add(es,"sigep",EXPR_VARIABLE,0,&sigep);
+	symset_add(es,"time",EXPR_ZAFUNCTION,0,dtime);
+	symset_add(es,"sig",EXPR_VARIABLE,0,&last_sig);
+	symset_add(es,"sigepv",EXPR_VARIABLE,0,&sigep);
 	setza(getpid);
 	setza(getppid);
 	setza(gettid);
@@ -463,9 +477,9 @@ void add_common_symbols(struct expr_symset *es){
 	//setconst(O_TMPFILE);
 	setconst(O_TRUNC);
 	setconst(O_WRONLY);
-	expr_symset_add(es,"SIG_DFL",EXPR_CONSTANT,expr_cast(SIG_DFL,double));
-	expr_symset_add(es,"SIG_ERR",EXPR_CONSTANT,expr_cast(SIG_ERR,double));
-	expr_symset_add(es,"SIG_IGN",EXPR_CONSTANT,expr_cast(SIG_IGN,double));
+	symset_add(es,"SIG_DFL",EXPR_CONSTANT,expr_cast(SIG_DFL,double));
+	symset_add(es,"SIG_ERR",EXPR_CONSTANT,expr_cast(SIG_ERR,double));
+	symset_add(es,"SIG_IGN",EXPR_CONSTANT,expr_cast(SIG_IGN,double));
 	setconst(SIGHUP);
 	setconst(SIGINT);
 	setconst(SIGQUIT);
@@ -507,11 +521,11 @@ void add_common_symbols(struct expr_symset *es){
 	setconst(GRND_RANDOM);
 	setconst(GRND_INSECURE);
 	setconst(INADDR_NONE);
-	expr_symset_add(es,"pid",EXPR_CONSTANT,(double)getpid());
-	expr_symset_add(es,"ppid",EXPR_CONSTANT,(double)getppid());
-	expr_symset_add(es,"uid",EXPR_CONSTANT,(double)getuid());
-	expr_symset_add(es,"gid",EXPR_CONSTANT,(double)getgid());
-#define register_syscall(sysid) expr_symset_add(es,"sys_" #sysid,EXPR_CONSTANT,0,(double)(__NR_##sysid));
+	symset_add(es,"pid",EXPR_CONSTANT,(double)getpid());
+	symset_add(es,"ppid",EXPR_CONSTANT,(double)getppid());
+	symset_add(es,"uid",EXPR_CONSTANT,(double)getuid());
+	symset_add(es,"gid",EXPR_CONSTANT,(double)getgid());
+#define register_syscall(sysid) symset_add(es,"sys_" #sysid,EXPR_CONSTANT,0,(double)(__NR_##sysid));
 #include "systable.c"
 #undef register_syscall
 #endif
