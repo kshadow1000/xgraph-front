@@ -54,7 +54,11 @@ double d_printl(double *args,size_t n){
 	r=expr_buffered_write_flushat(&printff,expr_cast(*args,const void *),len,"\n",1);
 	return (double)r;
 }
-
+double d_printc(double *args,size_t n){
+	ssize_t r;
+	r=expr_writec(linebuf,(intptr_t)&printff,(size_t)args[1],(int)args[0]);
+	return (double)r;
+}
 static void *xmalloc(size_t size){
 	void *r;
 	r=malloc(size);
@@ -649,6 +653,7 @@ break3:
 	expr_symset_add(es,"argv",EXPR_CONSTANT,0,expr_cast(argv+optind,double));
 	expr_symset_add(es,"printf",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_printf,(size_t)0);
 	expr_symset_add(es,"printl",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_printl,(size_t)2);
+	expr_symset_add(es,"printc",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_printc,(size_t)2);
 	if(adbt||!nobt)
 		expr_builtin_symbol_addall(es,expr_symbols);
 	if(init_expr5(ep,e,"t",es,flag)<0){
