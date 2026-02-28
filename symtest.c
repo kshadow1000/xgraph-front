@@ -90,7 +90,7 @@ int main(int argc,char **argv){
 		return 0;
 	}
 	if(argc>3)strcpy(target,argv[3]);
-	init_expr_symset(es);
+	expr_symset_init(es);
 	//add_common_symbols(es);
 	fputs("creating\n",stderr);
 	st=dtime();
