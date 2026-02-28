@@ -74,10 +74,10 @@ int drawat(char *ey){
 	double gap=(to-from)/thread;
 	char *wbuf0,ei[EXPR_SYMLEN];
 	int flag=protect?EXPR_IF_PROTECT:0;
-	xeps=new_expr7(ex,para,es,flag,thread,&pc,ei);
+	xeps=expr_new7(ex,para,es,flag,thread,&pc,ei);
 	if(!xeps)
 		errx(EXIT_FAILURE,"x expression error:%s (%s)",expr_error(pc),ei);
-	yeps=new_expr7(ey,para,es,flag,thread,&pc,ei);
+	yeps=expr_new7(ey,para,es,flag,thread,&pc,ei);
 	if(!yeps)
 		errx(EXIT_FAILURE,"y expression error:%s (%s)",expr_error(pc),ei);
 	for(int i=0;i<thread;++i){
@@ -226,7 +226,7 @@ int main(int argc,char **argv){
 	int fromfd;
 	size_t fromsize=0;
 	barlen=wsize.ws_col>28?wsize.ws_col-28:0;
-	init_expr_symset(es);
+	expr_symset_init(es);
 	if(argc<2)
 		printhelp();
 	if(argscan(argc-1,argv+1,0,ats,NULL)<0)

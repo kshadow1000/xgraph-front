@@ -326,7 +326,7 @@ int unsafe=0;
 void setexpr(struct expr **p,const char *c){
 	int e;
 	char ei[EXPR_SYMLEN];
-	*p=new_expr6(c,"t",es,unsafe?0:EXPR_IF_PROTECT,&e,ei);
+	*p=expr_new6(c,"t",es,unsafe?0:EXPR_IF_PROTECT,&e,ei);
 	if(!*p)
 		errx(EXIT_FAILURE,"%s:%s",expr_error(e),ei);
 }

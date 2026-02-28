@@ -642,7 +642,7 @@ break2:
 		e=rbuf;
 	}
 break3:
-	es=new_expr_symset();
+	es=expr_symset_new();
 	if(!es)
 		err(EXIT_FAILURE,"cannot allocate memory");
 	add_common_symbols(es);
@@ -657,7 +657,7 @@ break3:
 	expr_symset_add(es,"printc",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_printc,(size_t)2);
 	if(adbt||!nobt)
 		expr_builtin_symbol_addall(es,expr_symbols);
-	if(init_expr5(ep,e,"t",es,flag)<0){
+	if(expr_init5(ep,e,"t",es,flag)<0){
 		if(*ep->errinfo)
 			errx(EXIT_FAILURE,"expression error:%s \"%s\"",expr_error(ep->error),ep->errinfo);
 		else
