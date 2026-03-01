@@ -417,16 +417,7 @@ void list(const struct expr *restrict ep,const struct expr_symset *restrict esp)
 	--level;
 	xprintf("}\n",ep->size,ep->vsize);
 }
-void *readall(intptr_t fd,ssize_t *len){
-	char *save;
-	ssize_t r=expr_file_readfd((void *)read,fd,1,&save);
-	if(r<0)
-		return NULL;
-	if(len)
-		*len=r;
-	save[r]=0;
-	return save;
-}
+void *readall(intptr_t fd,size_t *len);
 void printdouble(double val){
 	char *buf,*p;
 	if(asprintf(&buf,"%.4096lf",val)<0){
@@ -568,6 +559,7 @@ int main(int argc,char **argv){
 	double r;
 	struct expr ep[1];
 	jmp_buf jb;
+	volatile double show_result=1.0;
 	atexit(atend);
 	setvbuf(stdout,NULL,_IONBF,0);
 	if(argc<2)
@@ -649,6 +641,7 @@ break3:
 	printff.fd=STDOUT_FILENO;
 	expr_symset_add(es,"ret",EXPR_HOTFUNCTION,0,"(ep,val){reset(end);([ep]#([ep#SIZE_OFF]##(0#1))*INSTLEN)-->end;(end#-INSTLEN)->[[ep#IPP_OFF]];val->[[end]]}");
 	expr_symset_add(es,"destructor",EXPR_HOTFUNCTION,0,"(val){destruct(&#,&longjmp_out,&outbuf,val)}");
+	expr_symset_add(es,"calc_show_result",EXPR_VARIABLE,0,&show_result);
 	expr_symset_add(es,"outbuf",EXPR_VARIABLE,0,jb);
 	expr_symset_add(es,"argc",EXPR_CONSTANT,0,(double)(argc-optind));
 	expr_symset_add(es,"argv",EXPR_CONSTANT,0,expr_cast(argv+optind,double));
@@ -683,7 +676,8 @@ break3:
 					break;
 			}
 		}while(--count);
-		printdouble(r);
+		if(show_result!=0.0)
+			printdouble(r);
 	}
 	expr_free(ep);
 	return EXIT_SUCCESS;

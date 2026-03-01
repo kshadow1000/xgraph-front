@@ -366,6 +366,30 @@ double d_isprime(double x){
 double geterrno(void){
 	return cast(&errno,double);
 }
+void *readall(intptr_t fd,size_t *len){
+	char *save;
+	ssize_t r=expr_file_readfd((void *)read,fd,1,&save);
+	if(r<0)
+		return NULL;
+	if(len)
+		*len=r;
+	return save;
+}
+double d_readline(double x){
+	size_t n;
+	char *buf=readall(STDIN_FILENO,NULL),*p;
+	if(!buf)
+		return 0.0;
+	p=buf;
+	n=1;
+	while((p=strchr(p,'\n'))){
+		*p=0;
+		++p;
+		++n;
+	}
+	*expr_cast(x,double *)=(double)n;
+	return expr_cast(buf,double);
+}
 volatile double vx[8];
 /*
 struct expr_symbol *symset_add(struct expr_symset *restrict esp,const char *sym,int type,int flag,...){
@@ -398,6 +422,7 @@ void add_common_symbols(struct expr_symset *es){
 	symset_add(es,"errno",EXPR_VARIABLE,0,&errno);
 	symset_add(es,"geterrno",EXPR_ZAFUNCTION,EXPR_SF_UNSAFE,geterrno);
 	setza(getchar);
+	setfunc(readline);
 	setfunci(isprime);
 	setfunci(prime);
 	setfunci(prime_mt);

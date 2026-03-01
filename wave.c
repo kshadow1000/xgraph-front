@@ -52,7 +52,7 @@ void *xmalloc(size_t size){
 	}
 	return r;
 }
-ssize_t readall(int fd,void *bufp){
+static ssize_t readall(int fd,void *bufp){
 	return expr_file_readfd((void *)read,fd,0,bufp);
 }
 int ff_output=0,quiet=0;

@@ -27,9 +27,7 @@ ssize_t last_write_ret=0;
 #define outstring(str) (last_write_ret=write(STDERR_FILENO,str,sizeof(str)-1))
 void add_common_symbols(struct expr_symset *es);
 //#define free(v)
-ssize_t readall(int fd,void **pbuf){
-	return expr_file_readfd((void *)read,fd,0,pbuf);
-}
+void *readall(intptr_t fd,size_t *len);
 double evalx(double input,void *arg){
 	return expr_eval(*(void **)arg,input);
 }
@@ -223,7 +221,7 @@ int printhelp(void){
 	exit(EXIT_SUCCESS);
 }
 int main(int argc,char **argv){
-	int fromfd;
+	intptr_t fromfd;
 	size_t fromsize=0;
 	barlen=wsize.ws_col>28?wsize.ws_col-28:0;
 	expr_symset_init(es);
@@ -242,8 +240,8 @@ int main(int argc,char **argv){
 		if(fderr(fromfd)){
 			err(EXIT_FAILURE,"cannot open %s",frombmp);
 		}
-		fromsize=readall(fromfd,(void *)&frombuf);
-		if(fromsize<0){
+		frombuf=readall(fromfd,&fromsize);
+		if(!frombuf){
 			err(EXIT_FAILURE,"cannot read %s",frombmp);
 		}
 		close(fromfd);
@@ -254,7 +252,7 @@ int main(int argc,char **argv){
 	else {
 		fromfd=init_graph(&g,width,height,24,minx,maxx,miny,maxy);
 	}
-	if(fromfd<0)errx(EXIT_FAILURE,"cannot create a graph (%d)",fromfd);
+	if(fromfd<0)errx(EXIT_FAILURE,"cannot create a graph (%zd)",fromfd);
 	if(step<DBL_EPSILON){
 		step=graph_pixelstep(&g);
 	}
