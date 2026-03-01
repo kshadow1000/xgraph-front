@@ -182,8 +182,6 @@ ssize_t nonblock_read(int fd,void *buf,size_t len){
 }
 #endif
 warppi(void *,strerror,int)
-warpip(size_t,strlen,void *)
-warpppi(void *,strchr,void *,int)
 #define a2s(buf,args,size) buf=alloca(size+1);\
 	for(size_t i=0;i<size;++i)\
 		buf[i]=(char)*(args++)
@@ -404,8 +402,6 @@ void add_common_symbols(struct expr_symset *es){
 	setfunci(prime_mt);
 	setfunci(prime_old);
 	setfunc(strerror);
-	setfunc(strlen);
-	setmd(strchr,2);
 	setconst(EXIT_FAILURE);
 	setconst(EXIT_SUCCESS);
 #ifdef REAL_UNIX
