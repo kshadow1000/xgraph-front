@@ -656,7 +656,7 @@ break3:
 	expr_symset_add(es,"printl",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_printl,(size_t)2);
 	expr_symset_add(es,"printc",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_printc,(size_t)2);
 	if(adbt||!nobt)
-		expr_builtin_symbol_addalls(es,expr_symbols_all);
+		expr_builtin_symbol_addalls(es,expr_symbols_ess);
 	if(expr_init(ep,e,"t",es,flag)<0){
 		if(*ep->errinfo)
 			errx(EXIT_FAILURE,"expression error:%s \"%s\"",expr_error(ep->error),ep->errinfo);

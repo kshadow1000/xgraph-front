@@ -388,6 +388,7 @@ struct expr_symbol *symset_add(struct expr_symset *restrict esp,const char *sym,
 #define setfunci(c) symset_add(es,#c,EXPR_FUNCTION,EXPR_SF_UNSAFE,d_##c,EXPR_SF_INJECTION)
 #define setmd(c,dim) symset_add(es,#c,EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_##c,(size_t)dim)
 #define setconst(c) symset_add(es,#c,EXPR_CONSTANT,0,(double)(c))
+const struct expr_builtin_symbol systable[];
 void add_common_symbols(struct expr_symset *es){
 	char buf[32];
 	for(size_t i=0;i<(sizeof(vx)/sizeof(*vx));++i){
@@ -404,6 +405,7 @@ void add_common_symbols(struct expr_symset *es){
 	setfunc(strerror);
 	setconst(EXIT_FAILURE);
 	setconst(EXIT_SUCCESS);
+	symset_add(es,"systable",EXPR_CONSTANT,EXPR_SF_PACKAGE,systable);
 #ifdef REAL_UNIX
 	symset_add(es,"time",EXPR_ZAFUNCTION,EXPR_SF_UNSAFE,dtime);
 	symset_add(es,"sig",EXPR_VARIABLE,0,&last_sig);
@@ -521,9 +523,6 @@ void add_common_symbols(struct expr_symset *es){
 	symset_add(es,"ppid",EXPR_CONSTANT,0,(double)getppid());
 	symset_add(es,"uid",EXPR_CONSTANT,0,(double)getuid());
 	symset_add(es,"gid",EXPR_CONSTANT,0,(double)getgid());
-#define register_syscall(sysid) symset_add(es,"sys_" #sysid,EXPR_CONSTANT,0,(double)(__NR_##sysid));
-#include "systable.c"
-#undef register_syscall
 #endif
 }
 #ifdef REAL_UNIX
@@ -536,4 +535,14 @@ const char *sysname(unsigned int id){
 		return "unknown";
 	return r;
 }
+const struct expr_builtin_symbol systable[]={
+#define register_syscall(id) {.strlen=sizeof(#id)-1+4,.str="sys_" #id,.type=EXPR_CONSTANT,.un={.value=(double)(__NR_##id)}},
+#include "systable.c"
+#undef register_syscall
+	{.str=NULL}
+};
+#else
+const struct expr_builtin_symbol systable[]={
+	{.str=NULL}
+};
 #endif
