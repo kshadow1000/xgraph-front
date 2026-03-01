@@ -273,7 +273,7 @@ int main(int argc,char **argv){
 	wbuf=malloc((thread+1)*(18+barlen)+14);
 	bar=malloc(3+barlen);
 
-	expr_builtin_symbol_addall(es,expr_symbols);
+	expr_builtin_symbol_addalls(es,expr_symbols_all);
 	expr_symset_add(es,"draw_connect",EXPR_MDFUNCTION,0,draw_connect,4ul);
 #ifdef COMMON_SYMBOLS
 	add_common_symbols(es);

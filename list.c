@@ -127,13 +127,6 @@ void list(void){
 		printf("%-12s\tKeyword %s%s%s\t%s\n",p->str,p->flag&EXPR_KF_SUBEXPR?"S":" ",p->flag&EXPR_KF_SEPCOMMA?"C":" ",p->flag&EXPR_KF_NOPROTECT?"N":" ",p->desc);
 	}
 	printf("\n");
-	for(const struct expr_builtin_symbol *p=expr_symbols;;++p){
-		if(!p->str){
-			printf("%zu symbols\n",p-expr_symbols);
-			break;
-		}
-		psymbol(p->type,p->flag,p->dim,p->str,&p->un);
-	}
 	return;
 }
 void list_symbol(struct expr_symbol *p){
@@ -163,7 +156,7 @@ void list_common(void){
 	add_common_symbols(es);
 #endif
 	if(adbt)
-		expr_builtin_symbol_addall(es,expr_symbols);
+		expr_builtin_symbol_addalls(es,expr_symbols_all);
 //	expr_symset_callback(es,list_symbol,NULL);
 //	expr_symset_callbacks(es,list_symbol1);
 	expr_symset_foreach4(sp,es,__builtin_alloca(es->depth*EXPR_SYMSET_DEPTHUNIT),EXPR_SYMNEXT){

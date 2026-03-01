@@ -382,10 +382,10 @@ struct expr_symbol *symset_add(struct expr_symset *restrict esp,const char *sym,
 	if(!(expr_symset_add(esp,sym,type,flag,##__VA_ARGS__)))\
 		errx(EXIT_FAILURE,"cannot add symbol %s",sym);\
 })
-#define setza(c) symset_add(es,#c,EXPR_ZAFUNCTION,0,d_##c)
+#define setza(c) symset_add(es,#c,EXPR_ZAFUNCTION,EXPR_SF_UNSAFE,d_##c)
 #define setzau(c) symset_add(es,#c,EXPR_ZAFUNCTION,EXPR_SF_UNSAFE,d_##c)
-#define setfunc(c) symset_add(es,#c,EXPR_FUNCTION,0,d_##c,EXPR_SF_UNSAFE)
-#define setfunci(c) symset_add(es,#c,EXPR_FUNCTION,0,d_##c,EXPR_SF_INJECTION)
+#define setfunc(c) symset_add(es,#c,EXPR_FUNCTION,EXPR_SF_UNSAFE,d_##c,EXPR_SF_UNSAFE)
+#define setfunci(c) symset_add(es,#c,EXPR_FUNCTION,EXPR_SF_UNSAFE,d_##c,EXPR_SF_INJECTION)
 #define setmd(c,dim) symset_add(es,#c,EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_##c,(size_t)dim)
 #define setconst(c) symset_add(es,#c,EXPR_CONSTANT,0,(double)(c))
 void add_common_symbols(struct expr_symset *es){
@@ -395,7 +395,7 @@ void add_common_symbols(struct expr_symset *es){
 		symset_add(es,buf,EXPR_VARIABLE,0,vx+i);
 	}
 	symset_add(es,"errno",EXPR_VARIABLE,0,&errno);
-	symset_add(es,"geterrno",EXPR_ZAFUNCTION,0,geterrno);
+	symset_add(es,"geterrno",EXPR_ZAFUNCTION,EXPR_SF_UNSAFE,geterrno);
 	setza(getchar);
 	setfunci(isprime);
 	setfunci(prime);
@@ -405,7 +405,7 @@ void add_common_symbols(struct expr_symset *es){
 	setconst(EXIT_FAILURE);
 	setconst(EXIT_SUCCESS);
 #ifdef REAL_UNIX
-	symset_add(es,"time",EXPR_ZAFUNCTION,0,dtime);
+	symset_add(es,"time",EXPR_ZAFUNCTION,EXPR_SF_UNSAFE,dtime);
 	symset_add(es,"sig",EXPR_VARIABLE,0,&last_sig);
 	symset_add(es,"sigepv",EXPR_VARIABLE,0,&sigep);
 	setza(getpid);
@@ -517,10 +517,10 @@ void add_common_symbols(struct expr_symset *es){
 	setconst(GRND_RANDOM);
 	setconst(GRND_INSECURE);
 	setconst(INADDR_NONE);
-	symset_add(es,"pid",EXPR_CONSTANT,(double)getpid());
-	symset_add(es,"ppid",EXPR_CONSTANT,(double)getppid());
-	symset_add(es,"uid",EXPR_CONSTANT,(double)getuid());
-	symset_add(es,"gid",EXPR_CONSTANT,(double)getgid());
+	symset_add(es,"pid",EXPR_CONSTANT,0,(double)getpid());
+	symset_add(es,"ppid",EXPR_CONSTANT,0,(double)getppid());
+	symset_add(es,"uid",EXPR_CONSTANT,0,(double)getuid());
+	symset_add(es,"gid",EXPR_CONSTANT,0,(double)getgid());
 #define register_syscall(sysid) symset_add(es,"sys_" #sysid,EXPR_CONSTANT,0,(double)(__NR_##sysid));
 #include "systable.c"
 #undef register_syscall

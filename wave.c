@@ -332,7 +332,7 @@ void setexpr(struct expr **p,const char *c){
 }
 extern double sample_freq_d;
 __attribute__((constructor)) void atstart(void){
-	es=expr_builtin_symbol_convert(expr_symbols);
+	es=expr_builtin_symbol_converts(expr_symbols_all);
 	if(!es)
 		err(EXIT_FAILURE,"expr_builtin_symbol_convert");
 	if(!expr_symset_add(es,"y",EXPR_VARIABLE,0,&vf))
@@ -462,12 +462,9 @@ end:
 	va_end(ap);
 	return r;
 }
-void showsym(int type,const char *extra){
+void showsym3(int type,const char *extra,const struct expr_builtin_symbol *p){
 	char buf[32];
-	for(const struct expr_builtin_symbol *p=expr_symbols;;++p){
-		if(!p->str){
-			break;
-		}
+	for(;p->str;++p){
 		if(p->type!=type)
 			continue;
 		snprintf(buf,32,"%s%s",p->str,extra);
@@ -479,6 +476,12 @@ void showsym(int type,const char *extra){
 			fputs(" unsafe",stdout);
 		fputc('\n',stdout);
 	}
+}
+void showsym(int type,const char *extra){
+	static const struct expr_builtin_symbol *syms[]={expr_symbols_all};
+	const struct expr_builtin_symbol **p=syms;
+	for(;*p;++p)
+		showsym3(type,extra,*p);
 }
 void printdouble(double x){
 	char *buf,*p;
