@@ -390,6 +390,26 @@ double d_readline(double x){
 	*expr_cast(x,double *)=(double)n;
 	return expr_cast(buf,double);
 }
+struct expr_buffered_file r1f={
+	.un={.reader=(void *)read},
+	.buf=NULL,
+	.index=0,
+	.dynamic=8000,
+	.length=sizeof(getchf),
+	.written=0,
+};
+double d_readline1(double x){
+	ssize_t r;
+	char *p;
+	r1f.fd=STDIN_FILENO;
+	r=expr_buffered_readline(&r1f,'\n',&p);
+	*expr_cast(x,void **)=p;
+	return (double)r;
+}
+double d_endline1(void){
+	expr_buffered_rclose(&r1f);
+	return 0;
+}
 volatile double vx[8];
 /*
 struct expr_symbol *symset_add(struct expr_symset *restrict esp,const char *sym,int type,int flag,...){
@@ -423,6 +443,8 @@ void add_common_symbols(struct expr_symset *es){
 	symset_add(es,"geterrno",EXPR_ZAFUNCTION,EXPR_SF_UNSAFE,geterrno);
 	setza(getchar);
 	setfunc(readline);
+	setfunc(readline1);
+	setza(endline1);
 	setfunci(isprime);
 	setfunci(prime);
 	setfunci(prime_mt);
