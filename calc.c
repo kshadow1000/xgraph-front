@@ -200,7 +200,6 @@ const struct inst_info ii[]={
 [EXPR_XORN]={.name="xorn",.st=SUM,},
 [EXPR_GCDN]={.name="gcdn",.st=SUM,},
 [EXPR_LCMN]={.name="lcmn",.st=SUM,},
-[EXPR_LOOP]={.name="loop",.st=SUM,},
 [EXPR_FOR]={.name="for",.st=SUM,},
 [EXPR_ZA]={.name="za",.st=ADDR,},
 [EXPR_MD]={.name="md",.st=MD,},
@@ -510,6 +509,7 @@ const struct option ops[]={
 	{"no-optimize",0,NULL,'n'},
 	{"no-builtin",0,NULL,'N'},
 	{"dump",0,NULL,'D'},
+	{"quiet",0,NULL,'q'},
 	{"count",1,NULL,0xff01},
 	{"injection",0,NULL,'i'},
 	{"step",0,NULL,'s'},
@@ -527,6 +527,7 @@ void show_help(const char *a0){
 			"\t--no-optimize, -n\tdo not optimize\n"
 			"\t--no-builtin, -N\tdo not use builtin symbols\n"
 			"\t--dump, -D\tdump mode(do not evaluate)\n"
+			"\t--quiet, -q\tdo not print the result\n"
 			"\t--count count\tevaluate how many times,default 1\n"
 			"\t--injection, -i\tuse injective function only\n"
 			"\t--step, -s\tstep mode\n"
@@ -566,7 +567,7 @@ int main(int argc,char **argv){
 		show_help(*argv);
 	opterr=1;
 	for(;;){
-		switch(getopt_long(argc,argv,"pnDt::Nisckdgf:h",ops,NULL)){
+		switch(getopt_long(argc,argv,"pnDt::Nisckdgf:hq",ops,NULL)){
 			case 'p':
 				flag|=EXPR_IF_PROTECT;
 				break;
@@ -590,6 +591,9 @@ int main(int argc,char **argv){
 				break;
 			case 'D':
 				dump=1;
+				break;
+			case 'q':
+				show_result=0.0;
 				break;
 			case 's':
 				mode=STEP;
