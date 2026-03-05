@@ -27,7 +27,7 @@ const char *sysname(unsigned int id);
 
 void add_common_symbols(struct expr_symset *);
 static ssize_t linebuf(intptr_t fd,const void *buf,size_t size){
-	return expr_buffered_write_flushat((struct expr_buffered_file *)fd,buf,size,"\n",1);
+	return expr_buffered_write_sflushat((struct expr_buffered_file *)fd,buf,size,"\n",1);
 }
 char printfbuf[BUFSIZ];
 struct expr_buffered_file printff={
