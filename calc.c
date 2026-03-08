@@ -59,6 +59,23 @@ double d_printc(double *args,size_t n){
 	r=expr_writec(linebuf,(intptr_t)&printff,(size_t)args[1],(int)args[0]);
 	return (double)r;
 }
+double d_sscanf(double *args,size_t n){
+	const char *s,*fmt;
+	size_t slen,flen;
+	if(expr_unlikely(n<2))
+		return 0;
+	s=expr_cast(*args,const char *);
+	fmt=expr_cast(args[1],const char *);
+	slen=strlen(s);
+	flen=strlen(fmt);
+	return (double)expr_sscanf(s,slen,fmt,flen,(void **)(args+2),n-2);
+	/*
+	ssize_t s=1;
+	void *p=&s;
+	expr_sscanf("1234",4,"%d",2,&p,1);
+	return s;
+	*/
+}
 static void *xmalloc(size_t size){
 	void *r;
 	r=malloc(size);
@@ -649,6 +666,7 @@ break3:
 	expr_symset_add(es,"outbuf",EXPR_VARIABLE,0,jb);
 	expr_symset_add(es,"argc",EXPR_CONSTANT,0,(double)(argc-optind));
 	expr_symset_add(es,"argv",EXPR_CONSTANT,0,expr_cast(argv+optind,double));
+	expr_symset_add(es,"sscanf",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_sscanf,(size_t)0);
 	expr_symset_add(es,"printf",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_printf,(size_t)0);
 	expr_symset_add(es,"printl",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_printl,(size_t)2);
 	expr_symset_add(es,"printc",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_printc,(size_t)2);
