@@ -28,17 +28,11 @@ ssize_t last_write_ret=0;
 void add_common_symbols(struct expr_symset *es);
 //#define free(v)
 void *readall(intptr_t fd,size_t *len);
-double evalx(double input,void *arg){
-	return expr_eval(*(void **)arg,input);
-}
-double evaly(double input,void *arg){
-	return expr_eval(*((void **)arg+1),input);
+double evalxy(double input,void *arg){
+	return expr_eval((const struct expr *)arg,input);
 }
 void graph_drawep_mt(struct graph *restrict gp,uint32_t color,int32_t bold,const struct expr *xeps,const struct expr *yeps,double from,double to,double step,volatile double *currents,int thread){
-	const void *a[2];
-	a[0]=xeps;
-	a[1]=yeps;
-	graph_draw_mt(gp,color,bold,evalx,evaly,a,from,to,step,currents,thread);
+	graph_draw_mt(gp,color,bold,evalxy,evalxy,(void *)xeps,sizeof(struct expr),(void *)yeps,sizeof(struct expr),from,to,step,currents,thread);
 }
 volatile double *currents;
 volatile double n1=1.6;
@@ -210,13 +204,19 @@ const struct argtype ats[]={
 //	ARG("",,&,AT_,0),
 };
 int printhelp(void){
+	char name[16],alias[16];
 	for(const struct argtype *atp=ats;atp->name||atp->alias;++atp){
-		if(atp->name&&atp->alias)
-			fprintf(stderr,"--%-12s,-%-4s%16s\n",atp->name,atp->alias,atp->desc);
-		else if(atp->name)
-			fprintf(stderr,"--%-12s%16s\n",atp->name,atp->desc);
-		else
-			fprintf(stderr,"%-15s-%-4s%16s\n","",atp->alias,atp->desc);
+		if(atp->name){
+			sprintf(name,"--%s",atp->name);
+		}else {
+			*name=0;
+		}
+		if(atp->alias){
+			sprintf(alias,"-%s",atp->alias);
+		}else {
+			*alias=0;
+		}
+		fprintf(stderr,"%-12s%-8s%s\n",name,alias,atp->desc);
 	}
 	exit(EXIT_SUCCESS);
 }
