@@ -1,5 +1,5 @@
 # xgraph-front
-Front end of [xgraph](https://github.com/rd-bt/xgraph) library
+Front end of [xgraph](https://github.com/kshadow1000/xgraph) library
 
 Example:
 ```
@@ -115,7 +115,7 @@ How to build
 
 Run
 ```
-git clone https://github.com/rd-bt/xgraph.git
+git clone https://github.com/kshadow1000/xgraph.git
 ```
 or
 ```
