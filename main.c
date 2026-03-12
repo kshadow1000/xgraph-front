@@ -25,6 +25,13 @@
 #define BUFSIZE (1024*1024)
 ssize_t last_write_ret=0;
 #define outstring(str) (last_write_ret=write(STDERR_FILENO,str,sizeof(str)-1))
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#endif
+
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wcast-function-type-mismatch"
 void add_common_symbols(struct expr_symset *es);
 //#define free(v)
 void *readall(intptr_t fd,size_t *len);
@@ -200,7 +207,7 @@ const struct argtype ats[]={
 	ARG("color",NULL,&color,AT_INT,1,"color -- color of the functions"),
 	ARG("safe","p",&protect,AT_BOOL,1,"work in protected mode"),
 	ARG("help","h",printhelp,AT_CALLZ,0,"show this help"),
-	{NULL,NULL}
+	ARG(NULL,NULL,NULL,0,0,NULL)
 //	ARG("",,&,AT_,0),
 };
 int printhelp(void){

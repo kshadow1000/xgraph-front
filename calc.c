@@ -25,6 +25,13 @@ const char *sysname(unsigned int id);
 #define likely(cond) expr_likely(cond)
 #define unlikely(cond) expr_unlikely(cond)
 
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#endif
+
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wcast-function-type-mismatch"
 void add_common_symbols(struct expr_symset *);
 static ssize_t linebuf(intptr_t fd,const void *buf,size_t size){
 	return expr_buffered_write_sflushat((struct expr_buffered_file *)fd,buf,size,"\n",1);
@@ -536,7 +543,7 @@ const struct option ops[]={
 	{"getchar",0,NULL,'g'},
 	{"help",0,NULL,'h'},
 	{"file",1,NULL,'f'},
-	{NULL},
+	{NULL,0,NULL,0},
 };
 void show_help(const char *a0){
 	fprintf(stdout,"usage: %s [options] expression\n"

@@ -13,6 +13,13 @@
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#endif
+
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wcast-function-type-mismatch"
 #ifdef __unix__
 #define REAL_UNIX
 #include <unistd.h>

@@ -24,6 +24,12 @@
 #include "bitmap.h"
 #include "expr.h"
 #define write(fd,buf,size) expr_internal_syscall3(SYS_write,fd,buf,size)
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#endif
+
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 struct expr_symset *es=NULL;
 void sdtime(double dsec){
 	struct timespec ts;
@@ -531,7 +537,7 @@ const struct option ops[]={
 	{"text-ratio",1,NULL,'A'},
 	{"text-interval",1,NULL,'D'},
 #endif
-	{NULL}
+	{NULL,0,NULL,0}
 };
 #define show(a,b) {if(sndbkn<0.0)out("\033[K\0337%.2lfs cost|%.2lfs written|freq=%.2lf (inaccurate)\0338",a,b,det2freq(det));else out("\033[K\0337%.2lfs cost|%.2lfs written|freq=%.2lf (inaccurate)|sound broken(%.2lfs)\0338",a,b,det2freq(det),sndbkn);}
 int main(int argc,char **argv){
