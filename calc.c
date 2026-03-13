@@ -10,6 +10,7 @@
 #include <getopt.h>
 #include <errno.h>
 #include <stdarg.h>
+#define EXPR_BLOCKWARNING 1
 #include "expr.h"
 #ifdef __unix__
 #define REAL_UNIX
@@ -25,13 +26,6 @@ const char *sysname(unsigned int id);
 #define likely(cond) expr_likely(cond)
 #define unlikely(cond) expr_unlikely(cond)
 
-#ifdef __clang__
-#pragma GCC diagnostic ignored "-Wunknown-warning-option"
-#endif
-
-#pragma GCC diagnostic ignored "-Wsign-compare"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wcast-function-type-mismatch"
 void add_common_symbols(struct expr_symset *);
 static ssize_t linebuf(intptr_t fd,const void *buf,size_t size){
 	return expr_buffered_write_sflushat((struct expr_buffered_file *)fd,buf,size,"\n",1);

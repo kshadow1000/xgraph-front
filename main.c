@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <float.h>
 #include "graph.h"
+#define EXPR_BLOCKWARNING 1
 #include "expr.h"
 #ifdef __unix__
 #define REAL_UNIX
@@ -25,13 +26,6 @@
 #define BUFSIZE (1024*1024)
 ssize_t last_write_ret=0;
 #define outstring(str) (last_write_ret=write(STDERR_FILENO,str,sizeof(str)-1))
-#ifdef __clang__
-#pragma GCC diagnostic ignored "-Wunknown-warning-option"
-#endif
-
-#pragma GCC diagnostic ignored "-Wsign-compare"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wcast-function-type-mismatch"
 void add_common_symbols(struct expr_symset *es);
 //#define free(v)
 void *readall(intptr_t fd,size_t *len);

@@ -22,14 +22,9 @@
 #include <getopt.h>
 #include <stdarg.h>
 #include "bitmap.h"
+#define EXPR_BLOCKWARNING 1
 #include "expr.h"
 #define write(fd,buf,size) expr_internal_syscall3(SYS_write,fd,buf,size)
-#ifdef __clang__
-#pragma GCC diagnostic ignored "-Wunknown-warning-option"
-#endif
-
-#pragma GCC diagnostic ignored "-Wsign-compare"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 struct expr_symset *es=NULL;
 void sdtime(double dsec){
 	struct timespec ts;
