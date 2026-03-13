@@ -395,7 +395,7 @@ struct expr_buffered_file r1f={
 	.un={.reader=(void *)read},
 	.buf=NULL,
 	.index=0,
-	.dynamic=8000,
+	.dynamic=SIZE_MAX,
 	.length=sizeof(getchf),
 	.written=0,
 };

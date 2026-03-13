@@ -31,14 +31,7 @@ static ssize_t linebuf(intptr_t fd,const void *buf,size_t size){
 	return expr_buffered_write_sflushat((struct expr_buffered_file *)fd,buf,size,"\n",1);
 }
 char printfbuf[BUFSIZ];
-struct expr_buffered_file printff={
-	.un={.writer=(expr_writer)write},
-	.buf=printfbuf,
-	.index=0,
-	.dynamic=0,
-	.length=sizeof(printfbuf),
-	.written=0,
-};
+struct expr_buffered_file printff=EXPR_BUFFERED_INITIALIZER(0,(expr_writer)write,printfbuf,BUFSIZ);
 static void __attribute__((destructor)) ffend(void){
 	expr_buffered_close(&printff);
 }
@@ -70,12 +63,18 @@ double d_sscanf(double *args,size_t n){
 	slen=strlen(s);
 	flen=strlen(fmt);
 	return (double)expr_sscanf(s,slen,fmt,flen,(void **)(args+2),n-2);
-	/*
-	ssize_t s=1;
-	void *p=&s;
-	expr_sscanf("1234",4,"%d",2,&p,1);
-	return s;
-	*/
+}
+char scanfbuf[BUFSIZ];
+struct expr_buffered_file scanff=EXPR_BUFFERED_INITIALIZER(0,read,scanfbuf,BUFSIZ);
+double d_scanf(double *args,size_t n){
+	const char *s,*fmt;
+	size_t slen,flen;
+	slen=expr_buffered_readline(&scanff,'\n',&s);
+	if(expr_unlikely((ssize_t)slen<0))
+		return -1;
+	fmt=expr_cast(args[0],const char *);
+	flen=strlen(fmt);
+	return (double)expr_sscanf(s,slen,fmt,flen,(void **)(args+1),n-1);
 }
 static void *xmalloc(size_t size){
 	void *r;
@@ -556,6 +555,8 @@ void show_help(const char *a0){
 			"\t--file, -f file\tread expression from file\n"
 			"\t--help, -h\tshow this help\n"
 			"extend function:\n"
+			"\tscanf(format,...)\n"
+			"\tsscanf(str,format,...)\n"
 			"\tprintf(format,...)\n"
 			"\tprintl(buf,len)\n"
 			"\tprintc(c,n)\n"
@@ -661,12 +662,14 @@ break3:
 		err(EXIT_FAILURE,"cannot allocate memory");
 	add_common_symbols(es);
 	printff.fd=STDOUT_FILENO;
+	scanff.fd=STDIN_FILENO;
 	expr_symset_add(es,"ret",EXPR_HOTFUNCTION,0,"(ep,val){reset(end);([ep]#([ep#SIZE_OFF]##(0#1))*INSTLEN)-->end;(end#-INSTLEN)->[[ep#IPP_OFF]];val->[[end]]}");
 	expr_symset_add(es,"destructor",EXPR_HOTFUNCTION,0,"(val){destruct(&#,&longjmp_out,&outbuf,val)}");
 	expr_symset_add(es,"calc_show_result",EXPR_VARIABLE,0,&show_result);
 	expr_symset_add(es,"outbuf",EXPR_VARIABLE,0,jb);
 	expr_symset_add(es,"argc",EXPR_CONSTANT,0,(double)(argc-optind));
 	expr_symset_add(es,"argv",EXPR_CONSTANT,0,expr_cast(argv+optind,double));
+	expr_symset_add(es,"scanf",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_scanf,(size_t)0);
 	expr_symset_add(es,"sscanf",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_sscanf,(size_t)0);
 	expr_symset_add(es,"printf",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_printf,(size_t)0);
 	expr_symset_add(es,"printl",EXPR_MDFUNCTION,EXPR_SF_UNSAFE,d_printl,(size_t)2);
